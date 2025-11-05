@@ -235,74 +235,74 @@ create policy user_settings_delete_authenticated on public.user_settings for del
 create policy user_settings_delete_anon on public.user_settings for delete to anon using (false);
 
 -- ---------------------- loans ----------------------
-create policy loans_select_authenticated on public.loans for select to authenticated using (user_id = auth.uid());
-create policy loans_select_anon on public.loans for select to anon using (false);
-create policy loans_insert_authenticated on public.loans for insert to authenticated with check (user_id = auth.uid());
-create policy loans_insert_anon on public.loans for insert to anon with check (false);
-create policy loans_update_authenticated on public.loans for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy loans_update_anon on public.loans for update to anon using (false) with check (false);
-create policy loans_delete_authenticated on public.loans for delete to authenticated using (user_id = auth.uid());
-create policy loans_delete_anon on public.loans for delete to anon using (false);
+-- create policy loans_select_authenticated on public.loans for select to authenticated using (user_id = auth.uid());
+-- create policy loans_select_anon on public.loans for select to anon using (false);
+-- create policy loans_insert_authenticated on public.loans for insert to authenticated with check (user_id = auth.uid());
+-- create policy loans_insert_anon on public.loans for insert to anon with check (false);
+-- create policy loans_update_authenticated on public.loans for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy loans_update_anon on public.loans for update to anon using (false) with check (false);
+-- create policy loans_delete_authenticated on public.loans for delete to authenticated using (user_id = auth.uid());
+-- create policy loans_delete_anon on public.loans for delete to anon using (false);
 
 -- ---------------------- loan_change_events ----------------------
-create policy loan_change_events_select_authenticated on public.loan_change_events for select to authenticated using (user_id = auth.uid());
-create policy loan_change_events_select_anon on public.loan_change_events for select to anon using (false);
-create policy loan_change_events_insert_authenticated on public.loan_change_events for insert to authenticated with check (user_id = auth.uid());
-create policy loan_change_events_insert_anon on public.loan_change_events for insert to anon with check (false);
-create policy loan_change_events_update_authenticated on public.loan_change_events for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy loan_change_events_update_anon on public.loan_change_events for update to anon using (false) with check (false);
-create policy loan_change_events_delete_authenticated on public.loan_change_events for delete to authenticated using (user_id = auth.uid());
-create policy loan_change_events_delete_anon on public.loan_change_events for delete to anon using (false);
+-- create policy loan_change_events_select_authenticated on public.loan_change_events for select to authenticated using (user_id = auth.uid());
+-- create policy loan_change_events_select_anon on public.loan_change_events for select to anon using (false);
+-- create policy loan_change_events_insert_authenticated on public.loan_change_events for insert to authenticated with check (user_id = auth.uid());
+-- create policy loan_change_events_insert_anon on public.loan_change_events for insert to anon with check (false);
+-- create policy loan_change_events_update_authenticated on public.loan_change_events for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy loan_change_events_update_anon on public.loan_change_events for update to anon using (false) with check (false);
+-- create policy loan_change_events_delete_authenticated on public.loan_change_events for delete to authenticated using (user_id = auth.uid());
+-- create policy loan_change_events_delete_anon on public.loan_change_events for delete to anon using (false);
 
 -- ---------------------- simulations ----------------------
-create policy simulations_select_authenticated on public.simulations for select to authenticated using (user_id = auth.uid());
-create policy simulations_select_anon on public.simulations for select to anon using (false);
-create policy simulations_insert_authenticated on public.simulations for insert to authenticated with check (user_id = auth.uid());
-create policy simulations_insert_anon on public.simulations for insert to anon with check (false);
-create policy simulations_update_authenticated on public.simulations for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy simulations_update_anon on public.simulations for update to anon using (false) with check (false);
-create policy simulations_delete_authenticated on public.simulations for delete to authenticated using (user_id = auth.uid());
-create policy simulations_delete_anon on public.simulations for delete to anon using (false);
+-- create policy simulations_select_authenticated on public.simulations for select to authenticated using (user_id = auth.uid());
+-- create policy simulations_select_anon on public.simulations for select to anon using (false);
+-- create policy simulations_insert_authenticated on public.simulations for insert to authenticated with check (user_id = auth.uid());
+-- create policy simulations_insert_anon on public.simulations for insert to anon with check (false);
+-- create policy simulations_update_authenticated on public.simulations for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy simulations_update_anon on public.simulations for update to anon using (false) with check (false);
+-- create policy simulations_delete_authenticated on public.simulations for delete to authenticated using (user_id = auth.uid());
+-- create policy simulations_delete_anon on public.simulations for delete to anon using (false);
 
 -- ---------------------- simulation_loan_snapshots ----------------------
-create policy simulation_loan_snapshots_select_authenticated on public.simulation_loan_snapshots for select to authenticated using (user_id = auth.uid());
-create policy simulation_loan_snapshots_select_anon on public.simulation_loan_snapshots for select to anon using (false);
-create policy simulation_loan_snapshots_insert_authenticated on public.simulation_loan_snapshots for insert to authenticated with check (user_id = auth.uid());
-create policy simulation_loan_snapshots_insert_anon on public.simulation_loan_snapshots for insert to anon with check (false);
-create policy simulation_loan_snapshots_update_authenticated on public.simulation_loan_snapshots for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy simulation_loan_snapshots_update_anon on public.simulation_loan_snapshots for update to anon using (false) with check (false);
-create policy simulation_loan_snapshots_delete_authenticated on public.simulation_loan_snapshots for delete to authenticated using (user_id = auth.uid());
-create policy simulation_loan_snapshots_delete_anon on public.simulation_loan_snapshots for delete to anon using (false);
+-- create policy simulation_loan_snapshots_select_authenticated on public.simulation_loan_snapshots for select to authenticated using (user_id = auth.uid());
+-- create policy simulation_loan_snapshots_select_anon on public.simulation_loan_snapshots for select to anon using (false);
+-- create policy simulation_loan_snapshots_insert_authenticated on public.simulation_loan_snapshots for insert to authenticated with check (user_id = auth.uid());
+-- create policy simulation_loan_snapshots_insert_anon on public.simulation_loan_snapshots for insert to anon with check (false);
+-- create policy simulation_loan_snapshots_update_authenticated on public.simulation_loan_snapshots for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy simulation_loan_snapshots_update_anon on public.simulation_loan_snapshots for update to anon using (false) with check (false);
+-- create policy simulation_loan_snapshots_delete_authenticated on public.simulation_loan_snapshots for delete to authenticated using (user_id = auth.uid());
+-- create policy simulation_loan_snapshots_delete_anon on public.simulation_loan_snapshots for delete to anon using (false);
 
 -- ---------------------- monthly_execution_logs ----------------------
-create policy monthly_execution_logs_select_authenticated on public.monthly_execution_logs for select to authenticated using (user_id = auth.uid());
-create policy monthly_execution_logs_select_anon on public.monthly_execution_logs for select to anon using (false);
-create policy monthly_execution_logs_insert_authenticated on public.monthly_execution_logs for insert to authenticated with check (user_id = auth.uid());
-create policy monthly_execution_logs_insert_anon on public.monthly_execution_logs for insert to anon with check (false);
-create policy monthly_execution_logs_update_authenticated on public.monthly_execution_logs for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy monthly_execution_logs_update_anon on public.monthly_execution_logs for update to anon using (false) with check (false);
-create policy monthly_execution_logs_delete_authenticated on public.monthly_execution_logs for delete to authenticated using (user_id = auth.uid());
-create policy monthly_execution_logs_delete_anon on public.monthly_execution_logs for delete to anon using (false);
+-- create policy monthly_execution_logs_select_authenticated on public.monthly_execution_logs for select to authenticated using (user_id = auth.uid());
+-- create policy monthly_execution_logs_select_anon on public.monthly_execution_logs for select to anon using (false);
+-- create policy monthly_execution_logs_insert_authenticated on public.monthly_execution_logs for insert to authenticated with check (user_id = auth.uid());
+-- create policy monthly_execution_logs_insert_anon on public.monthly_execution_logs for insert to anon with check (false);
+-- create policy monthly_execution_logs_update_authenticated on public.monthly_execution_logs for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy monthly_execution_logs_update_anon on public.monthly_execution_logs for update to anon using (false) with check (false);
+-- create policy monthly_execution_logs_delete_authenticated on public.monthly_execution_logs for delete to authenticated using (user_id = auth.uid());
+-- create policy monthly_execution_logs_delete_anon on public.monthly_execution_logs for delete to anon using (false);
 
 -- ---------------------- simulation_history_metrics ----------------------
-create policy simulation_history_metrics_select_authenticated on public.simulation_history_metrics for select to authenticated using (user_id = auth.uid());
-create policy simulation_history_metrics_select_anon on public.simulation_history_metrics for select to anon using (false);
-create policy simulation_history_metrics_insert_authenticated on public.simulation_history_metrics for insert to authenticated with check (user_id = auth.uid());
-create policy simulation_history_metrics_insert_anon on public.simulation_history_metrics for insert to anon with check (false);
-create policy simulation_history_metrics_update_authenticated on public.simulation_history_metrics for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy simulation_history_metrics_update_anon on public.simulation_history_metrics for update to anon using (false) with check (false);
-create policy simulation_history_metrics_delete_authenticated on public.simulation_history_metrics for delete to authenticated using (user_id = auth.uid());
-create policy simulation_history_metrics_delete_anon on public.simulation_history_metrics for delete to anon using (false);
+-- create policy simulation_history_metrics_select_authenticated on public.simulation_history_metrics for select to authenticated using (user_id = auth.uid());
+-- create policy simulation_history_metrics_select_anon on public.simulation_history_metrics for select to anon using (false);
+-- create policy simulation_history_metrics_insert_authenticated on public.simulation_history_metrics for insert to authenticated with check (user_id = auth.uid());
+-- create policy simulation_history_metrics_insert_anon on public.simulation_history_metrics for insert to anon with check (false);
+-- create policy simulation_history_metrics_update_authenticated on public.simulation_history_metrics for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy simulation_history_metrics_update_anon on public.simulation_history_metrics for update to anon using (false) with check (false);
+-- create policy simulation_history_metrics_delete_authenticated on public.simulation_history_metrics for delete to authenticated using (user_id = auth.uid());
+-- create policy simulation_history_metrics_delete_anon on public.simulation_history_metrics for delete to anon using (false);
 
 -- ---------------------- adherence_metrics ----------------------
-create policy adherence_metrics_select_authenticated on public.adherence_metrics for select to authenticated using (user_id = auth.uid());
-create policy adherence_metrics_select_anon on public.adherence_metrics for select to anon using (false);
-create policy adherence_metrics_insert_authenticated on public.adherence_metrics for insert to authenticated with check (user_id = auth.uid());
-create policy adherence_metrics_insert_anon on public.adherence_metrics for insert to anon with check (false);
-create policy adherence_metrics_update_authenticated on public.adherence_metrics for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy adherence_metrics_update_anon on public.adherence_metrics for update to anon using (false) with check (false);
-create policy adherence_metrics_delete_authenticated on public.adherence_metrics for delete to authenticated using (user_id = auth.uid());
-create policy adherence_metrics_delete_anon on public.adherence_metrics for delete to anon using (false);
+-- create policy adherence_metrics_select_authenticated on public.adherence_metrics for select to authenticated using (user_id = auth.uid());
+-- create policy adherence_metrics_select_anon on public.adherence_metrics for select to anon using (false);
+-- create policy adherence_metrics_insert_authenticated on public.adherence_metrics for insert to authenticated with check (user_id = auth.uid());
+-- create policy adherence_metrics_insert_anon on public.adherence_metrics for insert to anon with check (false);
+-- create policy adherence_metrics_update_authenticated on public.adherence_metrics for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- create policy adherence_metrics_update_anon on public.adherence_metrics for update to anon using (false) with check (false);
+-- create policy adherence_metrics_delete_authenticated on public.adherence_metrics for delete to authenticated using (user_id = auth.uid());
+-- create policy adherence_metrics_delete_anon on public.adherence_metrics for delete to anon using (false);
 
 -- =============================================================
 -- 7. post-migration validation suggestions (manual follow-up)
