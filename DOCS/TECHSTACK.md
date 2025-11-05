@@ -7,5 +7,6 @@ Frontend
 - Shadcn/ui
 
 Backend and database
+
 - Supabase
-</tech-stack>
+  </tech-stack>

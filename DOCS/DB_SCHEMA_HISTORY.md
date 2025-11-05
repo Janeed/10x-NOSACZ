@@ -1,20 +1,20 @@
 jsmieszek: You are a database architect whose task is to create a PostgreSQL database schema based on information provided from planning sessions, a Product Requirements Document (PRD), and the tech stack. Your goal is to design an efficient and scalable database structure that meets project requirements.
 
 1. <prd>
-@PRD.md
-</prd>
+   @PRD.md
+   </prd>
 
 This is the Product Requirements Document that specifies features, functionalities, and project requirements.
 
 2. <session_notes>
-DB_PLANNING_SUMMARY.md
-</session_notes>
+   DB_PLANNING_SUMMARY.md
+   </session_notes>
 
 These are notes from the database schema planning session. They may contain important decisions, considerations, and specific requirements discussed during the meeting.
 
 3. <tech_stack>
-TECHSTACK.md
-</tech_stack>
+   TECHSTACK.md
+   </tech_stack>
 
 Describes the technology stack that will be used in the project, which may influence database design decisions.
 
@@ -37,6 +37,7 @@ Follow these steps to create the database schema:
 7. Ensure the schema follows database design best practices, including normalization to the appropriate level (typically 3NF, unless denormalization is justified for performance reasons).
 
 The final output should have the following structure:
+
 ```markdown
 1. List of tables with their columns, data types, and constraints
 2. Relationships between tables
@@ -51,35 +52,37 @@ GitHub Copilot: Planning todos for database schema creation and then creating th
 
 Created 6 todos
 
-Starting (2/6) *Draft table definitions*
+Starting (2/6) _Draft table definitions_
 
-Starting (3/6) *Define relationships*
+Starting (3/6) _Define relationships_
 
-Starting (4/6) *Plan indexes*
+Starting (4/6) _Plan indexes_
 
-Starting (5/6) *RLS policies*
+Starting (5/6) _RLS policies_
 
-Starting (6/6) *Compose markdown schema*
+Starting (6/6) _Compose markdown schema_
 
 Created [](file:///Users/j.smieszek/Documents/Courses/10x-NOSACZ/.ai)
 
 Created [](file:///Users/j.smieszek/Documents/Courses/10x-NOSACZ/.ai/db-plan.md)
 
-Completed (6/6) *Compose markdown schema*
+Completed (6/6) _Compose markdown schema_
 
 # NOSACZ PostgreSQL Database Schema
 
 ## 1. Tables
 
-> Conventions  
-> - Monetary amounts: NUMERIC(14,2)  
-> - Annual interest rates (fractional): NUMERIC(7,5) with 0 < rate < 1 (e.g. 0.07250 = 7.250%)  
-> - Month granularity: DATE representing first day of month (YYYY-MM-01)  
-> - Timestamps: TIMESTAMPTZ  
-> - UUID primary keys unless noted  
+> Conventions
+>
+> - Monetary amounts: NUMERIC(14,2)
+> - Annual interest rates (fractional): NUMERIC(7,5) with 0 < rate < 1 (e.g. 0.07250 = 7.250%)
+> - Month granularity: DATE representing first day of month (YYYY-MM-01)
+> - Timestamps: TIMESTAMPTZ
+> - UUID primary keys unless noted
 > - All user-owned tables include `user_id UUID NOT NULL` with RLS enforcing ownership
 
 ### 1.1 Enumerated Types
+
 ```sql
 CREATE TYPE simulation_status AS ENUM ('running','active','completed','stale','cancelled');
 CREATE TYPE goal_type AS ENUM ('fastest_payoff','payment_reduction');
@@ -89,9 +92,11 @@ CREATE TYPE loan_change_type AS ENUM ('rate_change','balance_adjustment','term_a
 ```
 
 ### 1.2 users
+
 Managed by Supabase (`auth.users`). Referenced via `user_id`.
 
 ### 1.3 user_settings
+
 ```sql
 CREATE TABLE user_settings (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -102,6 +107,7 @@ CREATE TABLE user_settings (
 ```
 
 ### 1.4 loans
+
 ```sql
 CREATE TABLE loans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -120,6 +126,7 @@ CREATE TABLE loans (
 ```
 
 ### 1.5 loan_change_events
+
 ```sql
 CREATE TABLE loan_change_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -146,6 +153,7 @@ CREATE TABLE loan_change_events (
 ```
 
 ### 1.6 simulations
+
 ```sql
 CREATE TABLE simulations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -171,6 +179,7 @@ CREATE TABLE simulations (
 ```
 
 ### 1.7 simulation_loan_snapshots
+
 ```sql
 CREATE TABLE simulation_loan_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -186,6 +195,7 @@ CREATE TABLE simulation_loan_snapshots (
 ```
 
 ### 1.8 monthly_execution_logs
+
 ```sql
 CREATE TABLE monthly_execution_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -208,6 +218,7 @@ CREATE TABLE monthly_execution_logs (
 ```
 
 ### 1.9 simulation_history_metrics
+
 ```sql
 CREATE TABLE simulation_history_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -225,6 +236,7 @@ CREATE TABLE simulation_history_metrics (
 ```
 
 ### 1.10 adherence_metrics
+
 ```sql
 CREATE TABLE adherence_metrics (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -238,21 +250,22 @@ CREATE TABLE adherence_metrics (
 
 ## 2. Relationships
 
-| Relationship | Cardinality | Notes |
-|--------------|-------------|-------|
-| users → user_settings | 1:1 | Per-user config |
-| users → loans | 1:N | Cascade delete acceptable |
-| loans → loan_change_events | 1:N | Audit mutations |
-| users → simulations | 1:N | One active enforced |
-| simulations → simulation_loan_snapshots | 1:N | Snapshot per loan |
-| users → monthly_execution_logs | 1:N | Execution tracking |
-| loans → monthly_execution_logs | 1:N | Per loan per month |
-| simulations → simulation_history_metrics | 1:1 / 1:N | Typically one, allow many |
-| users → adherence_metrics | 1:1 | Aggregated counters |
+| Relationship                             | Cardinality | Notes                     |
+| ---------------------------------------- | ----------- | ------------------------- |
+| users → user_settings                    | 1:1         | Per-user config           |
+| users → loans                            | 1:N         | Cascade delete acceptable |
+| loans → loan_change_events               | 1:N         | Audit mutations           |
+| users → simulations                      | 1:N         | One active enforced       |
+| simulations → simulation_loan_snapshots  | 1:N         | Snapshot per loan         |
+| users → monthly_execution_logs           | 1:N         | Execution tracking        |
+| loans → monthly_execution_logs           | 1:N         | Per loan per month        |
+| simulations → simulation_history_metrics | 1:1 / 1:N   | Typically one, allow many |
+| users → adherence_metrics                | 1:1         | Aggregated counters       |
 
 All FKs use `ON DELETE CASCADE` per MVP retention assumptions.
 
 ## 3. Indexes
+
 ```sql
 -- loans
 CREATE INDEX idx_loans_user_id ON loans(user_id);
@@ -285,6 +298,7 @@ CREATE INDEX idx_sim_history_user ON simulation_history_metrics(user_id);
 ## 4. PostgreSQL Row-Level Security (RLS) Policies
 
 Enable RLS:
+
 ```sql
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
@@ -297,6 +311,7 @@ ALTER TABLE adherence_metrics ENABLE ROW LEVEL SECURITY;
 ```
 
 Policies:
+
 ```sql
 CREATE POLICY select_own_user_settings ON user_settings
   FOR SELECT USING (user_id = auth.uid());
@@ -326,6 +341,7 @@ CREATE POLICY modify_own_adherence_metrics ON adherence_metrics FOR ALL USING (u
 ```
 
 Optional restriction for server-computed inserts:
+
 ```sql
 REVOKE ALL ON simulation_loan_snapshots FROM PUBLIC;
 REVOKE ALL ON simulation_history_metrics FROM PUBLIC;
@@ -347,7 +363,7 @@ REVOKE ALL ON simulation_history_metrics FROM PUBLIC;
 - Performance: Index set minimal for MVP; scale adjustments (partitioning, advanced indexing) deferred.
 - Backfill: Use `backfilled` statuses to distinguish retroactive entries from real-time logs.
 
---- 
+---
 
 This schema satisfies PRD requirements for loan management, simulation lifecycle, overpayment configuration, execution tracking, metrics, and user isolation while remaining lean and extensible for future iterations.
 

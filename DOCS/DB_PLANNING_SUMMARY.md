@@ -1,5 +1,6 @@
 <conversation_summary>
 <decisions>
+
 1. Simulations are strictly owned by a single user (one-to-many: users → simulations); no sharing features in MVP.
 2. Simulation recomputation will occur on demand; no persistent monthly schedule table for results in MVP.
 3. Each simulation can restart from the change point (loan edits, etc.).
@@ -17,9 +18,10 @@
 15. No soft delete mechanism for loans; hard deletes are acceptable in MVP.
 16. RLS will include `user_id` in dependent tables directly to avoid join-based policy complexity.
 17. Concurrency/race mitigation (double-click actions) deferred to a UI debounce rather than optimistic locking/version columns for MVP.
-</decisions>
+    </decisions>
 
 <matched_recommendations>
+
 1. Simulations one-to-many with users (Recommendation adopted; sharing deferred).
 2. Recalculate on demand instead of storing monthly entries (Recommendation modified: monthly table dropped; baseline snapshot proposal rejected in favor of original loan data baseline).
 3. Store simulation loan snapshots (Recommendation adopted).
@@ -32,12 +34,13 @@
 10. Atomic transaction + optimistic concurrency controls deferred (Recommendation rejected in favor of simple UI debounce).
 11. Numeric precision for monetary/rate fields (Recommendation adopted).
 12. Loan change auditing via `loan_change_events` (Recommendation adopted).
-</matched_recommendations>
+    </matched_recommendations>
 
 <database_planning_summary>
 The MVP database design centers on user-owned financial entities with minimal persistence complexity, prioritizing simplicity and correctness of recalculated simulations over precomputed storage.
 
 Key Entities:
+
 - users: Managed by Supabase auth; referenced via `user_id` (UUID) in all domain tables.
 - loans: Core loan records holding original registration data (principal, remaining_balance at creation if mid-term, annual_rate, term_months, start_month). Serves as source for baseline interest calculations.
 - loan_change_events: Append-only audit trail for loan mutations (rate changes, balance adjustments, term edits, principal corrections) with `effective_month` to support re-simulation triggers.
@@ -46,6 +49,7 @@ Key Entities:
 - monthly_execution_logs: Tracks user-confirmed payment and overpayment actions per month per loan (user_id, loan_id, month_start_date, payment_status, payment_executed_at, overpayment_status, overpayment_executed_at, reason_code nullable). Drives adherence metrics and interest saved to date recalculation.
 
 Relationships:
+
 - users → loans: one-to-many (cascade delete acceptable; historical analytics for deleted loans not required).
 - users → simulations: one-to-many; a partial uniqueness constraint logic (application-level) on simulations enforces a single active simulation (is_active = true) per user.
 - simulations → simulation_loan_snapshots: one-to-many.
@@ -53,6 +57,7 @@ Relationships:
 - loans → loan_change_events: one-to-many; also includes user_id for direct RLS enforcement.
 
 Data Types & Constraints:
+
 - Monetary fields: NUMERIC(14,2).
 - Annual interest rate: NUMERIC(7,5) with CHECK (annual_rate > 0 AND annual_rate < 1).
 - Term: INTEGER > 0.
@@ -61,31 +66,38 @@ Data Types & Constraints:
 - Status fields implemented as ENUMs (to define): simulation_status, payment_status, overpayment_status.
 
 Security & RLS:
+
 - All domain tables (`loans`, `loan_change_events`, `simulations`, `simulation_loan_snapshots`, `monthly_execution_logs`) include `user_id` for direct RLS policies: USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid()).
 - No cross-user access paths; no public sharing tokens in MVP.
 - Avoid join-dependent RLS complexity; each table stores user_id redundantly where needed.
 
 Performance & Scalability:
+
 - Recalculation on demand avoids storing large monthly result sets initially.
 - Indexing intentionally minimal—rely on implicit primary keys and foreign keys; performance acceptable at low volume.
 - Partitioning deferred; DATE model enables future range/list partitioning if needed.
 
 Integrity & Consistency:
+
 - `loan_change_events` ensures historical audit for rate and balance edits; application logic applies latest effective values for simulation recompute.
 - Simulation staleness triggered when any relevant loan or configuration change occurs; `status` transitions managed by application (no concurrency optimization beyond UI debouncing).
 - Snapshots provide frozen starting context per simulation to maintain reproducibility even as loans evolve afterward.
 
 Interest Saved Calculation Approach:
+
 - Baseline derived dynamically from original loan parameters (principal, rate, term) excluding overpayments, adjusted for mid-term starting balance and accumulated changes via events up to simulation start date.
 - Cumulative interest saved computed during on-demand recalculation using current execution logs and baseline amortization math.
 
 Strategy Handling:
+
 - Strategy stored as string (e.g., 'avalanche', 'snowball', 'equal', 'ratio'); application-level enum ensures validity; DB CHECK could optionally enforce allowed set later.
 
 Concurrency & UX:
+
 - No versioning or optimistic locking columns; UI debounce prevents duplicate state mutations (e.g., double payment mark).
 
 Omissions (Intentional for MVP):
+
 - No monthly simulation results persistence table.
 - No advanced indexing or partitioning.
 - No soft deletes / historical retention after loan deletion.
@@ -95,6 +107,7 @@ This foundation supports incremental future additions (e.g., strategies registry
 </database_planning_summary>
 
 <unresolved_issues>
+
 1. Precise ENUM value sets for `simulation.status`, `payment_status`, and `overpayment_status` need final confirmation.
 2. Exact logic for deriving baseline interest when multiple `loan_change_events` precede first simulation requires specification (apply all changes effective before simulation start?).
 3. Definition of what transitions a simulation into `completed` vs `stale` states (end condition rules) remains to be finalized.
@@ -105,5 +118,5 @@ This foundation supports incremental future additions (e.g., strategies registry
 8. Effective date granularity for change events (support current month vs next month toggle) requires clear application of event order when multiple changes occur in same month.
 9. Interest saved computation formula details (rounding rules, frequency of recompute on dashboard) need documentation.
 10. Whether `simulation_loan_snapshots` should store payment_made_to_date or only structural fields is undecided.
-</unresolved_issues>
-</conversation_summary>
+    </unresolved_issues>
+    </conversation_summary>

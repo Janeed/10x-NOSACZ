@@ -3,6 +3,7 @@
 ## 1. Tables
 
 > Conventions
+>
 > - Monetary amounts: NUMERIC(14,2)
 > - Annual interest rates (fractional): NUMERIC(7,5) with 0 < rate < 1 (e.g. 0.07250 = 7.250%)
 > - Month granularity: DATE representing first day of month (YYYY-MM-01)
@@ -11,6 +12,7 @@
 > - All user-owned tables include `user_id UUID NOT NULL` with RLS enforcing ownership.
 
 ### 1.1 Enumerated Types
+
 ```sql
 CREATE TYPE simulation_status AS ENUM ('running','active','completed','stale','cancelled');
 CREATE TYPE goal_type AS ENUM ('fastest_payoff','payment_reduction');
@@ -20,10 +22,13 @@ CREATE TYPE loan_change_type AS ENUM ('rate_change','balance_adjustment','term_a
 ```
 
 ### 1.2 users (Auth Provided by Supabase)
+
 Not created manually (uses `auth.users`). Referenced by `user_id` in all domain tables.
 
 ### 1.3 user_settings
+
 Stores per-user mutable configuration driving simulations (single overpayment limit & preferences).
+
 ```sql
 CREATE TABLE user_settings (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -34,7 +39,9 @@ CREATE TABLE user_settings (
 ```
 
 ### 1.4 loans
+
 Original loan registration data; baseline interest calculations derive from these + change events.
+
 ```sql
 CREATE TABLE loans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,10 +59,13 @@ CREATE TABLE loans (
   UNIQUE (user_id, id)
 );
 ```
+
 `original_term_months` duplicates `term_months` at creation to track initial term length if term edits occur later.
 
 ### 1.5 loan_change_events
+
 Append-only audit of loan mutations with effective period.
+
 ```sql
 CREATE TABLE loan_change_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -82,7 +92,9 @@ CREATE TABLE loan_change_events (
 ```
 
 ### 1.6 simulations
+
 Single multi-loan simulation runs per user; one active at a time.
+
 ```sql
 CREATE TABLE simulations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -108,7 +120,9 @@ CREATE TABLE simulations (
 ```
 
 ### 1.7 simulation_loan_snapshots
+
 Frozen loan state at simulation start for deterministic recomputation & comparison.
+
 ```sql
 CREATE TABLE simulation_loan_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -124,7 +138,9 @@ CREATE TABLE simulation_loan_snapshots (
 ```
 
 ### 1.8 monthly_execution_logs
+
 Tracks execution of scheduled regular payments and overpayments per loan per month.
+
 ```sql
 CREATE TABLE monthly_execution_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -147,7 +163,9 @@ CREATE TABLE monthly_execution_logs (
 ```
 
 ### 1.9 simulation_history_metrics (optional aggregate summaries per simulation)
+
 Stores immutable snapshot metrics to enable historical comparison without full recompute.
+
 ```sql
 CREATE TABLE simulation_history_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -165,7 +183,9 @@ CREATE TABLE simulation_history_metrics (
 ```
 
 ### 1.10 adherence_metrics (optional, materialized summary for quick dashboard)
+
 Could be a materialized view or table; here as a table for MVP recalculation.
+
 ```sql
 CREATE TABLE adherence_metrics (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -179,17 +199,17 @@ CREATE TABLE adherence_metrics (
 
 ## 2. Relationships
 
-| Relationship | Cardinality | Notes |
-|--------------|-------------|-------|
-| users → user_settings | 1:1 | One settings row per user. |
-| users → loans | 1:N | User owns multiple loans. Cascade delete acceptable. |
-| loans → loan_change_events | 1:N | Audit trail of mutations. |
-| users → simulations | 1:N | Multiple simulations; only one active enforced via partial unique index. |
-| simulations → simulation_loan_snapshots | 1:N | Snapshot per included loan. |
-| users → monthly_execution_logs | 1:N | Each month per loan row owned by user. |
-| loans → monthly_execution_logs | 1:N | Execution log per loan per month. |
-| simulations → simulation_history_metrics | 1:1 or 1:N | Typically 1 snapshot created post-completion; can allow N for milestone captures. |
-| users → adherence_metrics | 1:1 | Aggregated counters per user. |
+| Relationship                             | Cardinality | Notes                                                                             |
+| ---------------------------------------- | ----------- | --------------------------------------------------------------------------------- |
+| users → user_settings                    | 1:1         | One settings row per user.                                                        |
+| users → loans                            | 1:N         | User owns multiple loans. Cascade delete acceptable.                              |
+| loans → loan_change_events               | 1:N         | Audit trail of mutations.                                                         |
+| users → simulations                      | 1:N         | Multiple simulations; only one active enforced via partial unique index.          |
+| simulations → simulation_loan_snapshots  | 1:N         | Snapshot per included loan.                                                       |
+| users → monthly_execution_logs           | 1:N         | Each month per loan row owned by user.                                            |
+| loans → monthly_execution_logs           | 1:N         | Execution log per loan per month.                                                 |
+| simulations → simulation_history_metrics | 1:1 or 1:N  | Typically 1 snapshot created post-completion; can allow N for milestone captures. |
+| users → adherence_metrics                | 1:1         | Aggregated counters per user.                                                     |
 
 All relationships are enforced with foreign keys including `ON DELETE CASCADE` to simplify cleanup (MVP assumption: historical retention after deletions not required).
 
@@ -231,6 +251,7 @@ CREATE INDEX idx_sim_history_user ON simulation_history_metrics(user_id);
 ## 4. Row-Level Security (RLS) Policies
 
 Enable RLS on all user-owned domain tables after creation:
+
 ```sql
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
@@ -243,6 +264,7 @@ ALTER TABLE adherence_metrics ENABLE ROW LEVEL SECURITY;
 ```
 
 Policies (Supabase pattern using `auth.uid()`):
+
 ```sql
 -- Generic SELECT policy template
 CREATE POLICY select_own_user_settings ON user_settings
@@ -273,6 +295,7 @@ CREATE POLICY modify_own_adherence_metrics ON adherence_metrics FOR ALL USING (u
 ```
 
 Optionally, restrict INSERT on snapshots & metrics to service role if computation done server-side:
+
 ```sql
 REVOKE ALL ON simulation_loan_snapshots FROM PUBLIC;
 REVOKE ALL ON simulation_history_metrics FROM PUBLIC;
@@ -298,4 +321,5 @@ REVOKE ALL ON simulation_history_metrics FROM PUBLIC;
 - Concurrency: No optimistic locking columns; UI should debounce actions. If needed later, add `updated_at` + `version INT` to mutable tables.
 
 ---
+
 Schema is aligned with PRD functional areas: loan CRUD, change events, simulation lifecycle, execution tracking, metrics & adherence, and user configuration while maintaining MVP simplicity and clear extension paths.
