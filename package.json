@@ -9,7 +9,8 @@
     "astro": "astro",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "database:dev:start": "supabase start"
   },
   "dependencies": {
     "@astrojs/node": "^9.4.3",
