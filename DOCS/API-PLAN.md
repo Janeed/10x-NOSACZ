@@ -91,7 +91,7 @@ Request Body:
 Response: same as GET.
 Success: 200 OK — settings updated; 201 Created — first-time creation.
 Errors: 400 Bad Request (negative limit), 409 Conflict (optimistic locking violation).
-Observability: Apply the same logging pattern as GET, ensuring requestId is propagated to logs and response headers.
+Observability: Apply the same logging pattern as GET, ensuring requestId is propagated to logs and response headers. If row with settings does not exist then it should be created (acts as POST)
 
 ### 2.3 Loans
 

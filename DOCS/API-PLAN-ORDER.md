@@ -14,14 +14,14 @@ This order optimizes for: (1) fastest path to a functional authenticated app, (2
 ## Detailed Order
 
 ### Phase 1: Authentication & Core Infrastructure
-1. `POST /auth/signup`
-2. `POST /auth/signin`
+1. `POST /auth/signup` (done)
+2. `POST /auth/signin` (done)
 
 Rationale: All subsequent `/api/*` endpoints require a valid user context (JWT). Implementing auth first unblocks frontend integration, middleware (`Authorization` header parsing), and RLS testing.
 
 ### Phase 2: User Profile & Domain Foundations
-5. `GET /api/user-settings`
-6. `PUT /api/user-settings`
+5. `GET /api/user-settings` (done)
+6. `PUT /api/user-settings` (done)
 7. `GET /api/strategies` (static registry)
 8. `POST /api/loans`
 9. `GET /api/loans`
