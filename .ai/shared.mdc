@@ -85,3 +85,4 @@ When modifying the directory structure, always update this section.
 - Implement proper error logging and user-friendly error messages.
 - Consider using custom error types or error factories for consistent error handling.
 - Keep business logic away from presentation layer by using services even at cost of bringing complexity.
+- Stick to single notation (lower camel case) for naming variables, properties and functions unless it will cause misalignments with external service / db integraiont
