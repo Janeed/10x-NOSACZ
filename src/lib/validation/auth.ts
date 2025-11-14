@@ -15,3 +15,7 @@ export const authSignupSchema = z
 
 export type AuthSignupSchema = typeof authSignupSchema;
 export type AuthSignupParsed = z.infer<typeof authSignupSchema>;
+
+export const authSigninSchema = authSignupSchema;
+export type AuthSigninSchema = typeof authSigninSchema;
+export type AuthSigninParsed = z.infer<typeof authSigninSchema>;

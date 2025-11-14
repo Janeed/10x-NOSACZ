@@ -36,6 +36,10 @@ export const validationError = (code: string, message: string, details?: unknown
   return createApiError(400, code, message, { details });
 };
 
+export const unauthorizedError = (code: string, message: string, details?: unknown): ApiError => {
+  return createApiError(401, code, message, { details });
+};
+
 export const conflictError = (code: string, message: string, details?: unknown): ApiError => {
   return createApiError(409, code, message, { details });
 };
