@@ -77,6 +77,7 @@ Response:
 ```
 Success: 200 OK — settings returned.
 Errors: 404 Not Found (settings not initialized).
+Observability: Reuse middleware-provided requestId for structured logs and mirror it in the `X-Request-Id` response header.
 
 #### PUT /api/user-settings
 Description: Create or update settings (upsert single row).
@@ -90,6 +91,7 @@ Request Body:
 Response: same as GET.
 Success: 200 OK — settings updated; 201 Created — first-time creation.
 Errors: 400 Bad Request (negative limit), 409 Conflict (optimistic locking violation).
+Observability: Apply the same logging pattern as GET, ensuring requestId is propagated to logs and response headers.
 
 ### 2.3 Loans
 

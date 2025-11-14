@@ -6,3 +6,4 @@ alwaysApply: false
 - Follow Supabase guidelines for security and performance
 - Use Zod schemas to validate data exchanged with the backend
 - Use supabase from context.locals in Astro routes instead of importing supabaseClient directly
+- Reuse the middleware-provided `locals.requestId` when logging or shaping responses so all endpoints follow the shared logging pattern and emit `X-Request-Id`
