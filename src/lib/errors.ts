@@ -40,6 +40,10 @@ export const unauthorizedError = (code: string, message: string, details?: unkno
   return createApiError(401, code, message, { details });
 };
 
+export const notFoundError = (code: string, message: string, details?: unknown): ApiError => {
+  return createApiError(404, code, message, { details });
+};
+
 export const conflictError = (code: string, message: string, details?: unknown): ApiError => {
   return createApiError(409, code, message, { details });
 };
