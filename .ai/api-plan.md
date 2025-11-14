@@ -1,4 +1,5 @@
 <api_analysis>
+
 1. Main database entities (with schema quotes)
    1.1. `user_settings`: “CREATE TABLE user_settings (...) monthly_overpayment_limit NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (monthly_overpayment_limit >= 0), reinvest_reduced_payments BOOLEAN NOT NULL DEFAULT FALSE...” (`.ai/db-plan.md`, lines 33-38).
    1.2. `loans`: “CREATE TABLE loans (... principal NUMERIC(14,2) NOT NULL CHECK (principal > 0), remaining_balance NUMERIC(14,2) NOT NULL CHECK (remaining_balance >= 0 AND remaining_balance <= principal), annual_rate NUMERIC(7,5) NOT NULL CHECK (annual_rate > 0 AND annual_rate < 1), term_months INT NOT NULL CHECK (term_months > 0)... is_closed BOOLEAN NOT NULL DEFAULT FALSE, closed_month DATE NULL” (lines 46-60).
@@ -56,8 +57,8 @@
    6.6. `simulation_history_metrics` and `adherence_metrics` endpoints enforce integer counters >=0.
 
 Assumptions:
+
 - Supabase auth supplies JWT with `user_id` embedded; API service uses Supabase client verifying tokens.
 - Background simulation processing performed via Supabase edge function or serverless worker; API triggers job and stores status in `simulations`.
 - Notifications delivered via polling endpoints; websockets optional future upgrade.
-</api_analysis>
-
+  </api_analysis>

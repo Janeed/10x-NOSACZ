@@ -45,41 +45,47 @@ export type PaginatedResult<T> = PaginationMeta & {
 };
 
 // Authentication models (Supabase Auth integration)
-export type AuthSignupRequest = {
+export interface AuthSignupRequest {
   email: string;
   password: string;
-};
+}
 
-export type AuthSignupResponse = {
+export interface AuthSignupResponse {
   user: { id: UserId; email: string };
   session: { accessToken: string; refreshToken: string };
-};
+}
 
 export type AuthSigninRequest = AuthSignupRequest;
 export type AuthSigninResponse = AuthSignupResponse;
 export type AuthSignoutResponse = void;
 
-export type AuthResetPasswordRequest = {
+export interface AuthResetPasswordRequest {
   email: string;
-};
+}
 
-export type AuthResetPasswordResponse = { accepted: boolean };
+export interface AuthResetPasswordResponse {
+  accepted: boolean;
+}
 
 // User Settings
-export type UserSettingsDto = {
+export interface UserSettingsDto {
   userId: UserSettingsRow["user_id"];
   monthlyOverpaymentLimit: UserSettingsRow["monthly_overpayment_limit"];
   reinvestReducedPayments: UserSettingsRow["reinvest_reduced_payments"];
   updatedAt: UserSettingsRow["updated_at"];
-};
+}
 
-export type UpdateUserSettingsCommand = {
-  monthlyOverpaymentLimit: NonNullable<UserSettingsInsert["monthly_overpayment_limit"]>;
-  reinvestReducedPayments: NonNullable<UserSettingsInsert["reinvest_reduced_payments"]>;
-};
+export interface UpdateUserSettingsCommand {
+  monthlyOverpaymentLimit: NonNullable<
+    UserSettingsInsert["monthly_overpayment_limit"]
+  >;
+  reinvestReducedPayments: NonNullable<
+    UserSettingsInsert["reinvest_reduced_payments"]
+  >;
+}
 
 // Loans
-export type LoanDto = {
+export interface LoanDto {
   id: LoanRow["id"];
   userId: LoanRow["user_id"];
   principal: LoanRow["principal"];
@@ -92,19 +98,19 @@ export type LoanDto = {
   closedMonth: LoanRow["closed_month"];
   createdAt: LoanRow["created_at"];
   staleSimulation?: boolean;
-};
+}
 
-export type LoanListQuery = {
+export interface LoanListQuery {
   page?: number;
   pageSize?: number;
   isClosed?: boolean;
   sort?: "created_at" | "start_month" | "remaining_balance";
   order?: Ordering;
-};
+}
 
 export type LoanListResponse = PaginatedResult<LoanDto>;
 
-export type CreateLoanCommand = {
+export interface CreateLoanCommand {
   id?: LoanInsert["id"];
   principal: LoanInsert["principal"];
   remainingBalance: LoanInsert["remaining_balance"];
@@ -112,7 +118,7 @@ export type CreateLoanCommand = {
   termMonths: LoanInsert["term_months"];
   originalTermMonths: LoanInsert["original_term_months"];
   startMonth: NonNullable<LoanInsert["start_month"]>;
-};
+}
 
 export type UpdateLoanCommand = CreateLoanCommand & {
   isClosed?: LoanUpdate["is_closed"];
@@ -122,7 +128,7 @@ export type UpdateLoanCommand = CreateLoanCommand & {
 export type PatchLoanCommand = Partial<UpdateLoanCommand>;
 
 // Loan Change Events
-export type LoanChangeEventDto = {
+export interface LoanChangeEventDto {
   id: LoanChangeEventRow["id"];
   loanId: LoanChangeEventRow["loan_id"];
   changeType: LoanChangeEventRow["change_type"];
@@ -137,20 +143,20 @@ export type LoanChangeEventDto = {
   oldTermMonths: LoanChangeEventRow["old_term_months"];
   newTermMonths: LoanChangeEventRow["new_term_months"];
   notes: LoanChangeEventRow["notes"];
-};
+}
 
-export type LoanChangeEventListQuery = {
+export interface LoanChangeEventListQuery {
   loanId: LoanChangeEventRow["loan_id"];
   page?: number;
   pageSize?: number;
   effectiveMonthFrom?: LoanChangeEventRow["effective_month"];
   effectiveMonthTo?: LoanChangeEventRow["effective_month"];
   changeType?: LoanChangeType;
-};
+}
 
 export type LoanChangeEventListResponse = PaginatedResult<LoanChangeEventDto>;
 
-export type CreateLoanChangeEventCommand = {
+export interface CreateLoanChangeEventCommand {
   loanId: LoanChangeEventInsert["loan_id"];
   effectiveMonth: LoanChangeEventInsert["effective_month"];
   changeType: LoanChangeEventInsert["change_type"];
@@ -163,10 +169,10 @@ export type CreateLoanChangeEventCommand = {
   newRemainingBalance?: LoanChangeEventInsert["new_remaining_balance"];
   oldTermMonths?: LoanChangeEventInsert["old_term_months"];
   newTermMonths?: LoanChangeEventInsert["new_term_months"];
-};
+}
 
 // Simulations
-export type SimulationDto = {
+export interface SimulationDto {
   id: SimulationRow["id"];
   userId: SimulationRow["user_id"];
   strategy: SimulationRow["strategy"];
@@ -186,9 +192,9 @@ export type SimulationDto = {
   completedAt: SimulationRow["completed_at"];
   cancelledAt: SimulationRow["cancelled_at"];
   notes: SimulationRow["notes"];
-};
+}
 
-export type SimulationListQuery = {
+export interface SimulationListQuery {
   status?: SimulationStatus;
   isActive?: boolean;
   stale?: boolean;
@@ -196,27 +202,29 @@ export type SimulationListQuery = {
   pageSize?: number;
   sort?: "created_at" | "completed_at";
   order?: Ordering;
-};
+}
 
 export type SimulationListResponse = PaginatedResult<SimulationDto>;
 
-export type SimulationQueuedResponse = {
+export interface SimulationQueuedResponse {
   simulationId: SimulationRow["id"];
   status: SimulationRow["status"];
   isActive: SimulationRow["is_active"];
   queuedAt: SimulationRow["created_at"];
-};
+}
 
-export type CreateSimulationCommand = {
+export interface CreateSimulationCommand {
   strategy: SimulationInsert["strategy"];
   goal: GoalType;
-  reinvestReducedPayments: NonNullable<SimulationInsert["reinvest_reduced_payments"]>;
+  reinvestReducedPayments: NonNullable<
+    SimulationInsert["reinvest_reduced_payments"]
+  >;
   monthlyOverpaymentLimit?: SimulationInsert["monthly_overpayment_limit"];
   paymentReductionTarget?: SimulationInsert["payment_reduction_target"];
   notes?: SimulationInsert["notes"];
-};
+}
 
-export type SimulationLoanSnapshotDto = {
+export interface SimulationLoanSnapshotDto {
   id: SimulationLoanSnapshotRow["id"];
   simulationId: SimulationLoanSnapshotRow["simulation_id"];
   loanId: SimulationLoanSnapshotRow["loan_id"];
@@ -225,17 +233,18 @@ export type SimulationLoanSnapshotDto = {
   startingMonth: SimulationLoanSnapshotRow["starting_month"];
   startingRate: SimulationLoanSnapshotRow["starting_rate"];
   userId: SimulationLoanSnapshotRow["user_id"];
-};
+}
 
-export type SimulationLoanSnapshotListQuery = {
+export interface SimulationLoanSnapshotListQuery {
   simulationId: SimulationLoanSnapshotRow["simulation_id"];
   page?: number;
   pageSize?: number;
-};
+}
 
-export type SimulationLoanSnapshotListResponse = PaginatedResult<SimulationLoanSnapshotDto>;
+export type SimulationLoanSnapshotListResponse =
+  PaginatedResult<SimulationLoanSnapshotDto>;
 
-export type SimulationHistoryMetricDto = {
+export interface SimulationHistoryMetricDto {
   id: SimulationHistoryMetricRow["id"];
   simulationId: SimulationHistoryMetricRow["simulation_id"];
   userId: SimulationHistoryMetricRow["user_id"];
@@ -248,17 +257,18 @@ export type SimulationHistoryMetricDto = {
   monthsToPayoff: SimulationHistoryMetricRow["months_to_payoff"];
   payoffMonth: SimulationHistoryMetricRow["payoff_month"];
   goalAlignment?: string;
-};
+}
 
-export type SimulationHistoryMetricListQuery = {
+export interface SimulationHistoryMetricListQuery {
   simulationId: SimulationHistoryMetricRow["simulation_id"];
   page?: number;
   pageSize?: number;
-};
+}
 
-export type SimulationHistoryMetricListResponse = PaginatedResult<SimulationHistoryMetricDto>;
+export type SimulationHistoryMetricListResponse =
+  PaginatedResult<SimulationHistoryMetricDto>;
 
-export type CreateSimulationHistoryMetricCommand = {
+export interface CreateSimulationHistoryMetricCommand {
   simulationId: SimulationHistoryMetricInsert["simulation_id"];
   userId: SimulationHistoryMetricInsert["user_id"];
   goal: GoalType;
@@ -269,7 +279,7 @@ export type CreateSimulationHistoryMetricCommand = {
   monthlyPaymentTotal?: SimulationHistoryMetricInsert["monthly_payment_total"];
   monthsToPayoff?: SimulationHistoryMetricInsert["months_to_payoff"];
   payoffMonth?: SimulationHistoryMetricInsert["payoff_month"];
-};
+}
 
 export type SimulationDetailDto = SimulationDto & {
   loanSnapshots?: SimulationLoanSnapshotDto[];
@@ -283,7 +293,7 @@ export type SimulationActivationResponse = SimulationDetailDto;
 export type SimulationCancelResponse = SimulationDetailDto;
 
 // Monthly Execution Logs
-export type MonthlyExecutionLogDto = {
+export interface MonthlyExecutionLogDto {
   id: MonthlyExecutionLogRow["id"];
   loanId: MonthlyExecutionLogRow["loan_id"];
   userId: MonthlyExecutionLogRow["user_id"];
@@ -300,9 +310,9 @@ export type MonthlyExecutionLogDto = {
   reasonCode: MonthlyExecutionLogRow["reason_code"];
   createdAt: MonthlyExecutionLogRow["created_at"];
   staleSimulation?: boolean;
-};
+}
 
-export type MonthlyExecutionLogListQuery = {
+export interface MonthlyExecutionLogListQuery {
   loanId?: MonthlyExecutionLogRow["loan_id"];
   monthStart?: MonthlyExecutionLogRow["month_start"];
   paymentStatus?: PaymentStatus;
@@ -311,11 +321,12 @@ export type MonthlyExecutionLogListQuery = {
   pageSize?: number;
   sort?: "month_start";
   order?: Ordering;
-};
+}
 
-export type MonthlyExecutionLogListResponse = PaginatedResult<MonthlyExecutionLogDto>;
+export type MonthlyExecutionLogListResponse =
+  PaginatedResult<MonthlyExecutionLogDto>;
 
-export type CreateMonthlyExecutionLogCommand = {
+export interface CreateMonthlyExecutionLogCommand {
   loanId: MonthlyExecutionLogInsert["loan_id"];
   monthStart: MonthlyExecutionLogInsert["month_start"];
   paymentStatus: MonthlyExecutionLogInsert["payment_status"];
@@ -328,9 +339,9 @@ export type CreateMonthlyExecutionLogCommand = {
   paymentExecutedAt?: MonthlyExecutionLogInsert["payment_executed_at"];
   overpaymentExecutedAt?: MonthlyExecutionLogInsert["overpayment_executed_at"];
   reasonCode?: MonthlyExecutionLogInsert["reason_code"];
-};
+}
 
-export type PatchMonthlyExecutionLogCommand = {
+export interface PatchMonthlyExecutionLogCommand {
   paymentStatus?: MonthlyExecutionLogUpdate["payment_status"];
   overpaymentStatus?: MonthlyExecutionLogUpdate["overpayment_status"];
   paymentExecutedAt?: MonthlyExecutionLogUpdate["payment_executed_at"];
@@ -339,10 +350,10 @@ export type PatchMonthlyExecutionLogCommand = {
   actualOverpaymentAmount?: MonthlyExecutionLogUpdate["actual_overpayment_amount"];
   scheduledOverpaymentAmount?: MonthlyExecutionLogUpdate["scheduled_overpayment_amount"];
   remainingBalanceAfter?: MonthlyExecutionLogUpdate["remaining_balance_after"];
-};
+}
 
 // Adherence Metrics
-export type AdherenceMetricDto = {
+export interface AdherenceMetricDto {
   userId: AdherenceMetricRow["user_id"];
   backfilledPaymentCount: AdherenceMetricRow["backfilled_payment_count"];
   overpaymentExecutedCount: AdherenceMetricRow["overpayment_executed_count"];
@@ -350,33 +361,44 @@ export type AdherenceMetricDto = {
   paidPaymentCount: AdherenceMetricRow["paid_payment_count"];
   updatedAt: AdherenceMetricRow["updated_at"];
   ratio: number;
-};
+}
 
-export type UpdateAdherenceMetricsCommand = {
+export interface UpdateAdherenceMetricsCommand {
   userId: AdherenceMetricUpdate["user_id"];
-  backfilledPaymentCount: NonNullable<AdherenceMetricUpdate["backfilled_payment_count"]>;
-  overpaymentExecutedCount: NonNullable<AdherenceMetricUpdate["overpayment_executed_count"]>;
-  overpaymentSkippedCount: NonNullable<AdherenceMetricUpdate["overpayment_skipped_count"]>;
+  backfilledPaymentCount: NonNullable<
+    AdherenceMetricUpdate["backfilled_payment_count"]
+  >;
+  overpaymentExecutedCount: NonNullable<
+    AdherenceMetricUpdate["overpayment_executed_count"]
+  >;
+  overpaymentSkippedCount: NonNullable<
+    AdherenceMetricUpdate["overpayment_skipped_count"]
+  >;
   paidPaymentCount: NonNullable<AdherenceMetricUpdate["paid_payment_count"]>;
-};
+}
 
 // Strategies
-export type StrategyDto = {
+export interface StrategyDto {
   id: SimulationRow["strategy"];
   name: string;
   description: string;
-};
+}
 
 // Dashboard Overview
 export type ActiveSimulationSummary = Pick<
   SimulationDto,
-  "id" | "strategy" | "goal" | "projectedPayoffMonth" | "totalInterestSaved" | "status"
+  | "id"
+  | "strategy"
+  | "goal"
+  | "projectedPayoffMonth"
+  | "totalInterestSaved"
+  | "status"
 > & {
   projectedPayoffMonth: SimulationRow["projected_payoff_month"];
   totalInterestSaved: SimulationRow["total_interest_saved"];
 };
 
-export type DashboardOverviewLoanItem = {
+export interface DashboardOverviewLoanItem {
   loanId: LoanRow["id"];
   remainingBalance: LoanRow["remaining_balance"];
   monthlyPayment: number;
@@ -384,46 +406,50 @@ export type DashboardOverviewLoanItem = {
   monthsRemaining: number;
   progress: number;
   isClosed: LoanRow["is_closed"];
-};
+}
 
-export type DashboardOverviewCurrentMonthEntry = {
+export interface DashboardOverviewCurrentMonthEntry {
   loanId: MonthlyExecutionLogRow["loan_id"];
   scheduledPayment: number;
   scheduledOverpayment: MonthlyExecutionLogRow["scheduled_overpayment_amount"];
   paymentStatus: MonthlyExecutionLogRow["payment_status"];
   overpaymentStatus: MonthlyExecutionLogRow["overpayment_status"];
-};
+}
 
-export type DashboardOverviewCurrentMonth = {
+export interface DashboardOverviewCurrentMonth {
   monthStart: MonthlyExecutionLogRow["month_start"];
   entries: DashboardOverviewCurrentMonthEntry[];
-};
+}
 
-export type DashboardOverviewGraphMonthlyBalancePoint = {
+export interface DashboardOverviewGraphMonthlyBalancePoint {
   month: MonthlyExecutionLogRow["month_start"];
   totalRemaining: number;
-};
+}
 
-export type DashboardOverviewGraphInterestPoint = {
+export interface DashboardOverviewGraphInterestPoint {
   month: MonthlyExecutionLogRow["month_start"];
   interest: number;
   interestSaved: number;
-};
+}
 
-export type DashboardOverviewGraphData = {
+export interface DashboardOverviewGraphData {
   monthlyBalances?: DashboardOverviewGraphMonthlyBalancePoint[];
   interestVsSaved?: DashboardOverviewGraphInterestPoint[];
-};
+}
 
 export type DashboardOverviewAdherence = Pick<
   AdherenceMetricDto,
-  "backfilledPaymentCount" | "overpaymentExecutedCount" | "overpaymentSkippedCount" | "paidPaymentCount" | "ratio"
+  | "backfilledPaymentCount"
+  | "overpaymentExecutedCount"
+  | "overpaymentSkippedCount"
+  | "paidPaymentCount"
+  | "ratio"
 >;
 
-export type DashboardOverviewDto = {
+export interface DashboardOverviewDto {
   activeSimulation: ActiveSimulationSummary | null;
   loans: DashboardOverviewLoanItem[];
   currentMonth: DashboardOverviewCurrentMonth | null;
   graphs?: DashboardOverviewGraphData;
   adherence?: DashboardOverviewAdherence;
-};
+}

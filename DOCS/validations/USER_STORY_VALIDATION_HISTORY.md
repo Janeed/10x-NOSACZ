@@ -1,6 +1,7 @@
 jsmieszek: You are experienced senior software engineer who is always very aware of potential issues with DB integration and endpoints specification.
 
 Based on PRD.md, DB_SCHEMA.md, API-PLAN.md i want you to plan implementation of a concrete user story (below). I want you to focus purely on data flow and validity of suggested implementation. implementation has to be in form of block schema that will present it without neccesity to dig into pure code. I want to have description of:
+
 - endpoint used from the schema
 - DB tables that will be affected by each call
 - if applicable, DB tables from which data will be retrieved
@@ -10,7 +11,7 @@ user sets up his global preferences, adds two loans and then runs simulation. Af
 
 GitHub Copilot: Block schema for the story:
 
-````text
+```text
 [1] Configure Preferences
   Endpoint: PUT /api/user-settings
   Writes: user_settings (upsert user row)
@@ -47,4 +48,4 @@ GitHub Copilot: Block schema for the story:
     - simulation_history_metrics (trend data)
     - adherence_metrics (aggregate counters)
   Writes: none
-````
+```

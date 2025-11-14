@@ -1,0 +1,11 @@
+src/types.ts
+scripts/
+src/layouts
+dist
+DOCS
+PROMPTS
+supabase
+.ai
+.astro
+.vscode
+*/**/*.astro

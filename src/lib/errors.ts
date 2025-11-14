@@ -1,16 +1,21 @@
-export type ApiErrorOptions = {
+export interface ApiErrorOptions {
   details?: unknown;
   cause?: unknown;
-};
+}
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details?: unknown;
 
-  constructor(status: number, code: string, message: string, options?: ApiErrorOptions) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    options?: ApiErrorOptions,
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.details = options?.details;
@@ -32,27 +37,51 @@ const createApiError = (
   return new ApiError(status, code, message, options);
 };
 
-export const validationError = (code: string, message: string, details?: unknown): ApiError => {
+export const validationError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
   return createApiError(400, code, message, { details });
 };
 
-export const unauthorizedError = (code: string, message: string, details?: unknown): ApiError => {
+export const unauthorizedError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
   return createApiError(401, code, message, { details });
 };
 
-export const notFoundError = (code: string, message: string, details?: unknown): ApiError => {
+export const notFoundError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
   return createApiError(404, code, message, { details });
 };
 
-export const conflictError = (code: string, message: string, details?: unknown): ApiError => {
+export const conflictError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
   return createApiError(409, code, message, { details });
 };
 
-export const tooManyRequestsError = (code: string, message: string, details?: unknown): ApiError => {
+export const tooManyRequestsError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
   return createApiError(429, code, message, { details });
 };
 
-export const internalError = (code: string, message: string, options?: ApiErrorOptions): ApiError => {
+export const internalError = (
+  code: string,
+  message: string,
+  options?: ApiErrorOptions,
+): ApiError => {
   return createApiError(500, code, message, options);
 };
 

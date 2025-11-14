@@ -17,8 +17,8 @@ This document describes how the NOSACZ application authenticates users, what the
      "user": { "id": "<uuid>", "email": "<email>" },
      "session": {
        "accessToken": "<jwt>",
-       "refreshToken": "<token>"
-     }
+       "refreshToken": "<token>",
+     },
    }
    ```
 3. Persist the tokens securely in the client (see "Client Responsibilities" below).
@@ -50,11 +50,11 @@ This document describes how the NOSACZ application authenticates users, what the
 
 ## Error Handling Summary
 
-| Status | Code                 | Meaning                                   | Client Action                             |
-|--------|----------------------|-------------------------------------------|--------------------------------------------|
-| 401    | `AUTH_REQUIRED`      | Missing/invalid/expired access token      | Refresh session or redirect to signin      |
-| 429    | `RATE_LIMITED`       | Too many auth attempts                    | Backoff and retry later                    |
-| 500    | `AUTH_VERIFICATION_FAILED` | Supabase verification failed (unexpected) | Retry, if persistent escalate/report       |
+| Status | Code                       | Meaning                                   | Client Action                         |
+| ------ | -------------------------- | ----------------------------------------- | ------------------------------------- |
+| 401    | `AUTH_REQUIRED`            | Missing/invalid/expired access token      | Refresh session or redirect to signin |
+| 429    | `RATE_LIMITED`             | Too many auth attempts                    | Backoff and retry later               |
+| 500    | `AUTH_VERIFICATION_FAILED` | Supabase verification failed (unexpected) | Retry, if persistent escalate/report  |
 
 ## Security Considerations
 

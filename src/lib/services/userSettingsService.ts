@@ -1,11 +1,15 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from '../../db/database.types.ts';
-import type { UpdateUserSettingsCommand, UserSettingsDto } from '../../types.ts';
-import { conflictError, internalError, notFoundError } from '../errors.ts';
+import type { Database } from "../../db/database.types.ts";
+import type {
+  UpdateUserSettingsCommand,
+  UserSettingsDto,
+} from "../../types.ts";
+import { conflictError, internalError, notFoundError } from "../errors.ts";
 
-const SELECT_COLUMNS = 'user_id, monthly_overpayment_limit, reinvest_reduced_payments, updated_at';
-type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
+const SELECT_COLUMNS =
+  "user_id, monthly_overpayment_limit, reinvest_reduced_payments, updated_at";
+type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
 
 const toDto = (row: UserSettingsRow): UserSettingsDto => {
   return {
@@ -16,9 +20,14 @@ const toDto = (row: UserSettingsRow): UserSettingsDto => {
   };
 };
 
-const assertSupabaseClient = (supabase: SupabaseClient<Database> | undefined): SupabaseClient<Database> => {
+const assertSupabaseClient = (
+  supabase: SupabaseClient<Database> | undefined,
+): SupabaseClient<Database> => {
   if (!supabase) {
-    throw internalError('SUPABASE_CLIENT_MISSING', 'Supabase client is not available');
+    throw internalError(
+      "SUPABASE_CLIENT_MISSING",
+      "Supabase client is not available",
+    );
   }
 
   return supabase;
@@ -26,7 +35,10 @@ const assertSupabaseClient = (supabase: SupabaseClient<Database> | undefined): S
 
 const assertUserId = (userId: string | undefined): string => {
   if (!userId) {
-    throw internalError('USER_IDENTIFIER_MISSING', 'User identifier is required to load settings');
+    throw internalError(
+      "USER_IDENTIFIER_MISSING",
+      "User identifier is required to load settings",
+    );
   }
 
   return userId;
@@ -46,18 +58,30 @@ const fetchExistingSettings = async (
 ): Promise<UserSettingsRow | null> => {
   let result;
   try {
-    result = await supabase.from('user_settings').select(SELECT_COLUMNS).eq('user_id', userId).maybeSingle();
+    result = await supabase
+      .from("user_settings")
+      .select(SELECT_COLUMNS)
+      .eq("user_id", userId)
+      .maybeSingle();
   } catch (cause) {
-    throw internalError('SUPABASE_UNAVAILABLE', 'Unable to load existing user settings', { cause });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Unable to load existing user settings",
+      { cause },
+    );
   }
 
   const { data, error } = result;
 
   if (error) {
-    throw internalError('SUPABASE_ERROR', 'Failed to load existing user settings', {
-      cause: error,
-      details: withSupabaseError(error),
-    });
+    throw internalError(
+      "SUPABASE_ERROR",
+      "Failed to load existing user settings",
+      {
+        cause: error,
+        details: withSupabaseError(error),
+      },
+    );
   }
 
   return data ?? null;
@@ -71,7 +95,7 @@ const insertUserSettings = async (
   let result;
   try {
     result = await supabase
-      .from('user_settings')
+      .from("user_settings")
       .insert({
         user_id: userId,
         monthly_overpayment_limit: command.monthlyOverpaymentLimit,
@@ -80,25 +104,29 @@ const insertUserSettings = async (
       .select(SELECT_COLUMNS)
       .maybeSingle();
   } catch (cause) {
-    throw internalError('SUPABASE_UNAVAILABLE', 'Unable to create user settings', { cause });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Unable to create user settings",
+      { cause },
+    );
   }
 
   const { data, error } = result;
 
   if (error) {
-    if (error.code === '23505') {
+    if (error.code === "23505") {
       return null;
     }
 
-    throw internalError('SUPABASE_ERROR', 'Failed to create user settings', {
+    throw internalError("SUPABASE_ERROR", "Failed to create user settings", {
       cause: error,
       details: withSupabaseError(error),
     });
   }
 
   if (!data) {
-    throw internalError('SUPABASE_ERROR', 'Failed to create user settings', {
-      details: { reason: 'Insert returned no data' },
+    throw internalError("SUPABASE_ERROR", "Failed to create user settings", {
+      details: { reason: "Insert returned no data" },
     });
   }
 
@@ -113,45 +141,55 @@ const updateUserSettingsRow = async (
   ifMatch?: string,
 ): Promise<UserSettingsRow> => {
   if (ifMatch && ifMatch !== current.updated_at) {
-    throw conflictError('USER_SETTINGS_VERSION_MISMATCH', 'User settings were modified by another process');
+    throw conflictError(
+      "USER_SETTINGS_VERSION_MISMATCH",
+      "User settings were modified by another process",
+    );
   }
 
   let result;
   try {
     result = await supabase
-      .from('user_settings')
+      .from("user_settings")
       .update({
         monthly_overpayment_limit: command.monthlyOverpaymentLimit,
         reinvest_reduced_payments: command.reinvestReducedPayments,
       })
-      .eq('user_id', userId)
-      .eq('updated_at', current.updated_at)
+      .eq("user_id", userId)
+      .eq("updated_at", current.updated_at)
       .select(SELECT_COLUMNS)
       .maybeSingle();
   } catch (cause) {
-    throw internalError('SUPABASE_UNAVAILABLE', 'Unable to update user settings', { cause });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Unable to update user settings",
+      { cause },
+    );
   }
 
   const { data, error } = result;
 
   if (error) {
-    throw internalError('SUPABASE_ERROR', 'Failed to update user settings', {
+    throw internalError("SUPABASE_ERROR", "Failed to update user settings", {
       cause: error,
       details: withSupabaseError(error),
     });
   }
 
   if (!data) {
-    throw conflictError('USER_SETTINGS_VERSION_MISMATCH', 'User settings update conflict detected');
+    throw conflictError(
+      "USER_SETTINGS_VERSION_MISMATCH",
+      "User settings update conflict detected",
+    );
   }
 
   return data;
 };
 
-export type UpsertUserSettingsResult = {
+export interface UpsertUserSettingsResult {
   dto: UserSettingsDto;
   created: boolean;
-};
+}
 
 export async function getUserSettings(
   supabase: SupabaseClient<Database>,
@@ -163,23 +201,36 @@ export async function getUserSettings(
   let result;
   try {
     result = await client
-      .from('user_settings')
+      .from("user_settings")
       .select(SELECT_COLUMNS)
-      .eq('user_id', resolvedUserId)
+      .eq("user_id", resolvedUserId)
       .maybeSingle();
   } catch (cause) {
-    throw internalError('SUPABASE_UNAVAILABLE', 'Unable to fetch user settings', { cause });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Unable to fetch user settings",
+      { cause },
+    );
   }
 
   const { data, error } = result;
 
   if (error) {
-    const details = { supabaseCode: error.code, supabaseMessage: error.message };
-    throw internalError('SUPABASE_ERROR', 'Failed to fetch user settings', { cause: error, details });
+    const details = {
+      supabaseCode: error.code,
+      supabaseMessage: error.message,
+    };
+    throw internalError("SUPABASE_ERROR", "Failed to fetch user settings", {
+      cause: error,
+      details,
+    });
   }
 
   if (!data) {
-    throw notFoundError('USER_SETTINGS_NOT_FOUND', 'User settings not initialized');
+    throw notFoundError(
+      "USER_SETTINGS_NOT_FOUND",
+      "User settings not initialized",
+    );
   }
 
   return toDto(data);
@@ -197,7 +248,11 @@ export async function upsertUserSettings(
   const existing = await fetchExistingSettings(client, resolvedUserId);
 
   if (!existing) {
-    const createdRow = await insertUserSettings(client, resolvedUserId, command);
+    const createdRow = await insertUserSettings(
+      client,
+      resolvedUserId,
+      command,
+    );
     if (createdRow) {
       return {
         created: true,
@@ -207,17 +262,32 @@ export async function upsertUserSettings(
 
     const refreshed = await fetchExistingSettings(client, resolvedUserId);
     if (!refreshed) {
-      throw conflictError('USER_SETTINGS_VERSION_MISMATCH', 'Unable to resolve user settings after insert conflict');
+      throw conflictError(
+        "USER_SETTINGS_VERSION_MISMATCH",
+        "Unable to resolve user settings after insert conflict",
+      );
     }
 
-    const updatedRow = await updateUserSettingsRow(client, resolvedUserId, command, refreshed, ifMatch);
+    const updatedRow = await updateUserSettingsRow(
+      client,
+      resolvedUserId,
+      command,
+      refreshed,
+      ifMatch,
+    );
     return {
       created: false,
       dto: toDto(updatedRow),
     };
   }
 
-  const updatedRow = await updateUserSettingsRow(client, resolvedUserId, command, existing, ifMatch);
+  const updatedRow = await updateUserSettingsRow(
+    client,
+    resolvedUserId,
+    command,
+    existing,
+    ifMatch,
+  );
   return {
     created: false,
     dto: toDto(updatedRow),
@@ -234,21 +304,29 @@ export async function markActiveSimulationsStale(
   let result;
   try {
     result = await client
-      .from('simulations')
+      .from("simulations")
       .update({ stale: true })
-      .eq('user_id', resolvedUserId)
-      .eq('is_active', true)
-      .eq('stale', false);
+      .eq("user_id", resolvedUserId)
+      .eq("is_active", true)
+      .eq("stale", false);
   } catch (cause) {
-    throw internalError('SUPABASE_UNAVAILABLE', 'Unable to mark simulations as stale', { cause });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Unable to mark simulations as stale",
+      { cause },
+    );
   }
 
   const { error } = result;
 
   if (error) {
-    throw internalError('SUPABASE_ERROR', 'Failed to mark simulations as stale', {
-      cause: error,
-      details: withSupabaseError(error),
-    });
+    throw internalError(
+      "SUPABASE_ERROR",
+      "Failed to mark simulations as stale",
+      {
+        cause: error,
+        details: withSupabaseError(error),
+      },
+    );
   }
 }

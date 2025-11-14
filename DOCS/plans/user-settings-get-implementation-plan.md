@@ -1,9 +1,11 @@
 # API Endpoint Implementation Plan: GET /api/user-settings
 
 ## 1. Endpoint Overview
+
 Retrieve the authenticated user’s loan overpayment configuration (`user_settings` single-row per user). Returns current limits and behavioral flags influencing simulation runs. If the user has never customized settings (row absent), respond with 404 (settings not initialized). Does not create defaults implicitly to avoid silent state coupling with simulations.
 
 ## 2. Request Details
+
 - HTTP Method: GET
 - URL: `/api/user-settings`
 - Parameters:
@@ -15,10 +17,12 @@ Retrieve the authenticated user’s loan overpayment configuration (`user_settin
 - Request Body: none
 
 ### Preconditions / Guards
+
 1. Valid authenticated session (Supabase `auth.getUser` already performed in middleware).
 2. `userId` present in `Astro.locals`.
 
 ## 3. Used Types
+
 - Domain DTO: `UserSettingsDto` (from `src/types.ts`).
   ```ts
   type UserSettingsDto = {
@@ -31,7 +35,9 @@ Retrieve the authenticated user’s loan overpayment configuration (`user_settin
 - Internal Row Mapping (Supabase): columns `user_id`, `monthly_overpayment_limit`, `reinvest_reduced_payments`, `updated_at`.
 
 ## 4. Response Details
+
 ### Success (200 OK)
+
 ```json
 {
   "userId": "uuid",
@@ -42,22 +48,28 @@ Retrieve the authenticated user’s loan overpayment configuration (`user_settin
 ```
 
 ### Error Responses
-| Status | Code | Message | When |
-|--------|------|---------|------|
-| 401 | AUTH_REQUIRED | Missing or invalid bearer token | Middleware rejects / no userId |
-| 404 | USER_SETTINGS_NOT_FOUND | User settings not initialized | No row for user_id |
-| 429 | RATE_LIMITED | Too many requests | Upstream rate limiter |
-| 500 | INTERNAL_ERROR | Internal server error | Unexpected DB / mapping failure |
+
+| Status | Code                    | Message                         | When                            |
+| ------ | ----------------------- | ------------------------------- | ------------------------------- |
+| 401    | AUTH_REQUIRED           | Missing or invalid bearer token | Middleware rejects / no userId  |
+| 404    | USER_SETTINGS_NOT_FOUND | User settings not initialized   | No row for user_id              |
+| 429    | RATE_LIMITED            | Too many requests               | Upstream rate limiter           |
+| 500    | INTERNAL_ERROR          | Internal server error           | Unexpected DB / mapping failure |
 
 Error payload format (from `errorResponse` helper):
+
 ```json
 {
-  "error": { "code": "USER_SETTINGS_NOT_FOUND", "message": "User settings not initialized" },
+  "error": {
+    "code": "USER_SETTINGS_NOT_FOUND",
+    "message": "User settings not initialized"
+  },
   "requestId": "..." // if available
 }
 ```
 
 ## 5. Data Flow
+
 1. Middleware authenticates JWT via Supabase client -> injects `userId` in `locals`.
 2. Handler (`GET`) obtains Supabase client from `Astro.locals.supabase` (rule: use context, not direct import).
 3. Service layer `userSettingsService.getUserSettings(userId)` executes:
@@ -70,6 +82,7 @@ Error payload format (from `errorResponse` helper):
 7. Errors bubble and are converted with `errorResponse()`.
 
 ## 6. Security Considerations
+
 - Authentication: Requires valid Supabase JWT; rely on existing middleware (`supabase.auth.getUser`).
 - Authorization: Row-Level Security (RLS) ensures only the owner can SELECT their row. Query filtered by `user_id = auth.uid()` implicitly enforced by RLS and explicit `.eq`.
 - Least Exposure: Selecting explicit column list (no wildcard) prevents accidental leakage of added future columns.
@@ -79,6 +92,7 @@ Error payload format (from `errorResponse` helper):
 - Logging: Use structured logging without leaking token. Include `requestId` for correlation.
 
 ## 7. Error Handling
+
 - Not Found: Return 404 with code `USER_SETTINGS_NOT_FOUND`.
 - Unauthorized: Middleware short-circuits with 401 `AUTH_REQUIRED` before handler executes.
 - Rate Limit: Middleware returns 429 `RATE_LIMITED`.
@@ -87,11 +101,13 @@ Error payload format (from `errorResponse` helper):
 - Observability: Log at `info` for successful fetch (event `userSettings.fetch.success`). Log at `warn` for 404. Log at `error` for internal failures including cause snapshot.
 
 ## 8. Performance Considerations
+
 - Single-row primary key lookup; latency dominated by network; minimal optimization needed.
 - Select only required columns (already minimal). Avoid `single()` that may cost extra error handling; use `maybeSingle()`.
 - JSON serialization trivial; ensure no expensive transformations.
 
 ## 9. Implementation Steps
+
 1. Service Creation: `src/lib/services/userSettingsService.ts`
    - Export `getUserSettings(supabase: SupabaseClient, userId: string): Promise<UserSettingsDto>`.
    - Query with `.maybeSingle()`, throw `not found` ApiError if `data === null`.
@@ -108,6 +124,7 @@ Error payload format (from `errorResponse` helper):
 5. Response ID: If middleware sets `requestId`, include header `X-Request-Id` on success; errorResponse already handles this.
 
 ## 10. Edge Cases & Notes
+
 - Fresh user (no row) -> 404.
 - Concurrent creation by another endpoint (PUT) between authorization and fetch is benign (row appears -> 200).
 - Numeric precision: Keep as string if Supabase returns string; avoid Number coercion for values > 2^53 boundary (not expected but consistent practice for monetary fields).

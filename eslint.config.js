@@ -14,6 +14,7 @@ import tseslint from "typescript-eslint";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, ".gitignore");
+const eslintignorePath = path.resolve(__dirname, ".eslintignore");
 
 const baseConfig = tseslint.config({
   extends: [
@@ -62,6 +63,7 @@ const reactConfig = tseslint.config({
 
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
+  includeIgnoreFile(eslintignorePath),
   baseConfig,
   jsxA11yConfig,
   reactConfig,

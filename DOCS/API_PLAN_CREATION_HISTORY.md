@@ -54,10 +54,13 @@ The final API plan should be formatted in markdown and include the following sec
 # REST API Plan
 
 ## 1. Resources
+
 - List each main resource and its corresponding database table
 
 ## 2. Endpoints
+
 For each resource provide:
+
 - HTTP Method
 - URL Path
 - Brief description
@@ -68,9 +71,11 @@ For each resource provide:
 - Error codes and messages
 
 ## 3. Authentication and Authorization
+
 - Describe the chosen authentication mechanism and implementation details
 
 ## 4. Validation and Business Logic
+
 - List validation conditions for each resource
 - Describe how business logic is implemented in the API
 ```

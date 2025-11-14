@@ -1,21 +1,25 @@
 # API Endpoint Implementation Plan: POST /auth/signin
 
 ## 1. Endpoint Overview
+
 Authenticate an existing user via Supabase Auth using email and password and return a session containing access and refresh tokens. Mirrors signup flow but returns 200 OK (not 201). Must strictly validate input, prevent user enumeration, and avoid caching sensitive tokens.
 
 ## 2. Request Details
+
 - HTTP Method: POST
 - URL: /auth/signin
 - Query Parameters: none (reject if any present)
 - Required Headers:
   - Content-Type: application/json (case-insensitive) — reject otherwise.
 - Request Body (JSON):
+
 ```json
 {
   "email": "user@example.com",
   "password": "string"
 }
 ```
+
 - Field Constraints:
   - email: trimmed, 6–254 chars, valid email format, transformed to lowercase.
   - password: 8–128 chars (no transform; allow spaces; fail if shorter/longer).
@@ -23,16 +27,26 @@ Authenticate an existing user via Supabase Auth using email and password and ret
 - Reject extra properties (strict schema).
 
 ## 3. Used Types
+
 - AuthSigninRequest (alias of AuthSignupRequest) `{ email: string; password: string }`
 - AuthSigninResponse (alias of AuthSignupResponse):
+
 ```ts
 {
-  user: { id: string; email: string };
-  session: { accessToken: string; refreshToken: string };
+  user: {
+    id: string;
+    email: string;
+  }
+  session: {
+    accessToken: string;
+    refreshToken: string;
+  }
 }
 ```
+
 - Internal Parsed Type: `AuthSigninParsed` via `authSigninSchema` (`z.infer<typeof authSigninSchema>`)
 - Service Result: `SignInResult`:
+
 ```ts
 type SignInResult = {
   userId: string;
@@ -43,26 +57,33 @@ type SignInResult = {
 ```
 
 ## 4. Response Details
+
 Successful (200 OK):
+
 ```json
 {
   "user": { "id": "uuid", "email": "user@example.com" },
   "session": { "accessToken": "jwt", "refreshToken": "string" }
 }
 ```
+
 Headers:
+
 - Content-Type: application/json; charset=utf-8
 - Cache-Control: no-store
 - X-Request-Id: <uuid>
 
 Error Response Format:
+
 ```json
 {
   "error": { "code": "STRING_CODE", "message": "Human readable" },
   "requestId": "uuid" // present if available
 }
 ```
+
 Status Codes:
+
 - 200: Success
 - 400: Invalid input / malformed JSON / bad content type / unexpected query
 - 401: Invalid credentials
@@ -70,6 +91,7 @@ Status Codes:
 - 500: Internal / upstream failures
 
 ## 5. Data Flow
+
 1. Route invoked (`POST /auth/signin`).
 2. Generate `requestId` (UUID); record `startedAt` for latency.
 3. Guards:
@@ -95,6 +117,7 @@ Status Codes:
 14. On any error: map to `ApiError`, log (warn for 4xx, error for 5xx) including requestId, code, status, latencyMs, emailHash if available; respond with standardized error body.
 
 ## 6. Security Considerations
+
 - Credential Handling: Password never logged or stored; only passed to Supabase.
 - User Enumeration: Always respond with generic INVALID_CREDENTIALS (401) for bad credentials; do not differentiate nonexistent email vs wrong password.
 - Rate Limiting: Leverage Supabase 429; plan future IP-based middleware throttle (e.g., in `middleware/`).
@@ -107,12 +130,18 @@ Status Codes:
 - Dependency Risk: Handle unexpected Supabase SDK errors with sanitized internal error.
 
 ## 7. Error Handling
+
 Centralized via `ApiError` factories.
 Add `unauthorizedError` factory (401) in `errors.ts`:
+
 ```ts
-export const unauthorizedError = (code: string, message: string, details?: unknown): ApiError =>
-  createApiError(401, code, message, { details });
+export const unauthorizedError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => createApiError(401, code, message, { details });
 ```
+
 Error Mapping Table:
 | Scenario | Code | Status |
 |----------|------|--------|
@@ -130,17 +159,20 @@ Error Mapping Table:
 | Catch-all unexpected | INTERNAL_ERROR | 500 |
 
 Logging Strategy:
+
 - Success: logger.info(event, 'Signin succeeded', { requestId, emailHash, latencyMs })
 - Client errors (4xx): logger.warn(...)
 - Server errors (5xx): logger.error(...)
 
 ## 8. Performance Considerations
+
 - Single external call — latency dominated by Supabase. Minimal CPU (hash + validation).
 - Avoid unnecessary object cloning; return direct typed response.
 - JSON stringify once via `jsonResponse` helper.
 - Future scaling: Introduce circuit breaker or retry only for transient 5xx (not needed MVP). Consider metrics integration later.
 
 ## 9. Implementation Steps
+
 1. Extend `errors.ts` with `unauthorizedError` factory (status 401).
 2. Add `authSigninSchema` in `validation/auth.ts` (could alias to signup schema for DRY):
    ```ts
@@ -167,6 +199,7 @@ Logging Strategy:
 9. Security Hardening (future): Add IP-based rate limiter or exponential backoff after consecutive failures; integrate account lock logic (if required).
 
 ## 10. Edge Cases & Decisions
+
 - Treat any supabase 400 containing "Invalid login credentials" (case-insensitive) as 401 to meet spec.
 - Do not differentiate disabled/unconfirmed email vs wrong password (uniform 401 response).
 - If Supabase later adds explicit 401 status, the mapping still consistent (401 passes through or is rewrapped).
@@ -174,6 +207,7 @@ Logging Strategy:
 - Logging email hash only prevents PII leakage while enabling correlation for anomaly detection.
 
 ## 11. Success Criteria
+
 - Returns 200 with expected structure on valid credentials.
 - Returns 401 for invalid credentials with uniform message.
 - No plaintext email or password in logs.
@@ -181,6 +215,7 @@ Logging Strategy:
 - All errors use standardized error body and include requestId.
 
 ## 12. Rollout & Verification
+
 1. Implement changes on feature branch.
 2. Manual test via HTTP client (e.g., curl / Postman) using valid and invalid credentials.
 3. Verify logs show hashed emails, correct latency.
@@ -188,10 +223,12 @@ Logging Strategy:
 5. Merge after code review focusing on error mapping and absence of sensitive logging.
 
 ## 13. Future Enhancements
+
 - Add refresh token rotation endpoint / session management.
 - Introduce audit trail table for authentication events (if regulatory needs).
 - Implement adaptive throttling (increasing delays after sequential failures).
 - Integrate structured metrics (Prometheus / OpenTelemetry) for auth events.
 
 ---
+
 This plan provides full guidance to implement `POST /auth/signin` aligned with existing project patterns and security best practices.

@@ -1,46 +1,61 @@
-import type { APIRoute } from 'astro';
-import { createHash, randomUUID } from 'node:crypto';
+import type { APIRoute } from "astro";
+import { createHash, randomUUID } from "node:crypto";
 
-import { validationError, internalError } from '../../../lib/errors.ts';
-import { errorResponse, jsonResponse, toApiError } from '../../../lib/http/responses.ts';
-import { logger } from '../../../lib/logger.ts';
-import { signUp } from '../../../lib/services/authService.ts';
-import { authSignupSchema } from '../../../lib/validation/auth.ts';
-import type { AuthSignupResponse } from '../../../types.ts';
+import { validationError, internalError } from "../../../lib/errors.ts";
+import {
+  errorResponse,
+  jsonResponse,
+  toApiError,
+} from "../../../lib/http/responses.ts";
+import { logger } from "../../../lib/logger.ts";
+import { signUp } from "../../../lib/services/authService.ts";
+import { authSignupSchema } from "../../../lib/validation/auth.ts";
+import type { AuthSignupResponse } from "../../../types.ts";
 
 const MAX_BODY_BYTES = 10 * 1024;
-const EXPECTED_CONTENT_TYPE = 'application/json';
-const EVENT = 'auth.signup';
+const EXPECTED_CONTENT_TYPE = "application/json";
+const EVENT = "auth.signup";
 
 const hashEmail = (email: string): string => {
-  return createHash('sha256').update(email).digest('hex');
+  return createHash("sha256").update(email).digest("hex");
 };
 
 const readRequestBody = async (request: Request): Promise<string> => {
   try {
     return await request.text();
   } catch (cause) {
-    throw internalError('BODY_READ_FAILED', 'Unable to read request body', { cause });
+    throw internalError("BODY_READ_FAILED", "Unable to read request body", {
+      cause,
+    });
   }
 };
 
 const ensureJsonContentType = (contentType: string | null): void => {
-  if (!contentType || !contentType.toLowerCase().includes(EXPECTED_CONTENT_TYPE)) {
-    throw validationError('INVALID_CONTENT_TYPE', 'Content-Type must be application/json');
+  if (
+    !contentType ||
+    !contentType.toLowerCase().includes(EXPECTED_CONTENT_TYPE)
+  ) {
+    throw validationError(
+      "INVALID_CONTENT_TYPE",
+      "Content-Type must be application/json",
+    );
   }
 };
 
 const enforceBodySize = (body: string): void => {
   const size = new TextEncoder().encode(body).length;
   if (size > MAX_BODY_BYTES) {
-    throw validationError('PAYLOAD_TOO_LARGE', 'Request body exceeds 10KB limit');
+    throw validationError(
+      "PAYLOAD_TOO_LARGE",
+      "Request body exceeds 10KB limit",
+    );
   }
 };
 
 const ensureNoQueryParams = (request: Request): void => {
   const url = new URL(request.url);
   if ([...url.searchParams.keys()].length > 0) {
-    throw validationError('INVALID_QUERY', 'Unexpected query parameters');
+    throw validationError("INVALID_QUERY", "Unexpected query parameters");
   }
 };
 
@@ -51,7 +66,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     ensureNoQueryParams(request);
-    ensureJsonContentType(request.headers.get('content-type'));
+    ensureJsonContentType(request.headers.get("content-type"));
 
     const rawBody = await readRequestBody(request);
     enforceBodySize(rawBody);
@@ -60,18 +75,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
     try {
       payload = rawBody ? JSON.parse(rawBody) : null;
     } catch {
-      throw validationError('INVALID_JSON', 'Request body must be valid JSON');
+      throw validationError("INVALID_JSON", "Request body must be valid JSON");
     }
 
     const parsed = authSignupSchema.safeParse(payload);
     if (!parsed.success) {
       const issues = parsed.error.issues.map((issue) => issue.message);
-      throw validationError('VALIDATION_ERROR', 'Invalid signup payload', { issues });
+      throw validationError("VALIDATION_ERROR", "Invalid signup payload", {
+        issues,
+      });
     }
 
     const supabase = locals.supabase;
     if (!supabase) {
-      throw internalError('SUPABASE_CLIENT_MISSING', 'Supabase client is not available');
+      throw internalError(
+        "SUPABASE_CLIENT_MISSING",
+        "Supabase client is not available",
+      );
     }
 
     const { email, password } = parsed.data;
@@ -89,7 +109,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       },
     };
 
-    logger.info(EVENT, 'Signup succeeded', {
+    logger.info(EVENT, "Signup succeeded", {
       requestId,
       emailHash: hashedEmail,
       latencyMs: Math.round(performance.now() - startedAt),
@@ -98,8 +118,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse(response, {
       status: 201,
       headers: {
-        'Cache-Control': 'no-store',
-        'X-Request-Id': requestId,
+        "Cache-Control": "no-store",
+        "X-Request-Id": requestId,
       },
     });
   } catch (error) {
