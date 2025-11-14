@@ -16,10 +16,8 @@ This order optimizes for: (1) fastest path to a functional authenticated app, (2
 ### Phase 1: Authentication & Core Infrastructure
 1. `POST /auth/signup`
 2. `POST /auth/signin`
-3. `POST /auth/signout`
-4. `POST /auth/reset-password`
 
-Rationale: All subsequent `/api/*` endpoints require a valid user context (JWT). Implementing auth first unblocks frontend integration, middleware (`Authorization` header parsing), and RLS testing. Reset password is low-effort once signup/signin flow exists.
+Rationale: All subsequent `/api/*` endpoints require a valid user context (JWT). Implementing auth first unblocks frontend integration, middleware (`Authorization` header parsing), and RLS testing.
 
 ### Phase 2: User Profile & Domain Foundations
 5. `GET /api/user-settings`
@@ -78,6 +76,11 @@ Rationale: The dashboard aggregates across active simulation, loans, snapshots, 
 31. `GET /api/admin/metrics/resimulations`
 
 Rationale: Internal analytics endpoint offers non-user value; defer until core user-facing features stabilize. Requires historical staleness/resimulation tracking already produced by prior phases.
+
+
+### Phase 7: Remaining Authentication & Core Infrastructure
+32. `POST /auth/signout`
+33. `POST /auth/reset-password`
 
 ---
 ## Dependency Graph Summary
