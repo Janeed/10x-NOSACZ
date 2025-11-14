@@ -1,0 +1,1 @@
+- API route handler for method should be uppercase, e.g. export const POST, export const GET
