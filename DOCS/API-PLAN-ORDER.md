@@ -27,14 +27,14 @@ Rationale: All subsequent `/api/*` endpoints require a valid user context (JWT).
 5. `GET /api/user-settings` (done)
 6. `PUT /api/user-settings` (done)
 7. `GET /api/strategies` (static registry) (done)
-8. `POST /api/loans`
-9. `GET /api/loans`
-10. `GET /api/loans/{loanId}`
-11. `PUT /api/loans/{loanId}`
-12. `PATCH /api/loans/{loanId}`
-13. `DELETE /api/loans/{loanId}`
-14. `GET /api/loan-change-events`
-15. `POST /api/loan-change-events`
+8. `POST /api/loans` (done)
+9. `GET /api/loans` (done)
+10. `GET /api/loans/{loanId}` (done)
+11. `PUT /api/loans/{loanId}` (done)
+12. `PATCH /api/loans/{loanId}` (done)
+13. `DELETE /api/loans/{loanId}` (done)
+14. `GET /api/loan-change-events` (done)
+15. `POST /api/loan-change-events` (done)
 
 Rationale:
 

@@ -69,6 +69,14 @@ export const conflictError = (
   return createApiError(409, code, message, { details });
 };
 
+export const preconditionError = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ApiError => {
+  return createApiError(412, code, message, { details });
+};
+
 export const tooManyRequestsError = (
   code: string,
   message: string,

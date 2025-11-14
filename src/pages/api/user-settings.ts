@@ -9,9 +9,9 @@ import {
 import { logger } from "../../lib/logger.ts";
 import {
   getUserSettings,
-  markActiveSimulationsStale,
   upsertUserSettings,
 } from "../../lib/services/userSettingsService.ts";
+import { markActiveSimulationStale } from "../../lib/services/simulationService.ts";
 import { parseUserSettingsUpdate } from "../../lib/validation/userSettings.ts";
 
 const ensureNoQueryParams = (request: Request): void => {
@@ -117,7 +117,7 @@ export const PUT: APIRoute = async ({ locals, request }) => {
       command,
       normalizedIfMatch,
     );
-    await markActiveSimulationsStale(locals.supabase, userId);
+  await markActiveSimulationStale(locals.supabase, userId);
 
     const logContext: Record<string, unknown> = {
       userId,
