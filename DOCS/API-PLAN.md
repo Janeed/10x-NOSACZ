@@ -51,13 +51,13 @@ Request Body and Response: same structure as signup.
 Success: 200 OK — session issued.
 Errors: 400 Bad Request (invalid input), 401 Unauthorized (invalid credentials).
 
-#### POST /auth/signout
+#### POST /api/auth/signout
 
 Description: Invalidate current refresh token.
 Success: 204 No Content — session terminated.
 Errors: 401 Unauthorized (missing/expired token).
 
-#### POST /auth/reset-password
+#### POST /api/auth/reset-password
 
 Description: Trigger password reset email via Supabase.
 Request Body:
@@ -475,6 +475,7 @@ Errors: 403 Forbidden for non-admin.
 - Rate limiting: apply IP + user-based throttling (e.g., 60 requests/min) using Astro middleware or edge function guard; stricter limits for simulation triggers (5 per user per hour) to prevent queue saturation.
 - All destructive endpoints (DELETE loan, cancel simulation) require `X-Client-Confirmation` header token from UI confirmation flow to mitigate accidental calls.
 - CSRF protection handled by using bearer tokens only (no cookies) for SPA; ensure HTTPS enforced.
+- Email enumeration risk: `POST /api/auth/reset-password` returns 404 for unregistered emails, which may allow attackers to discover valid email addresses; accepted per specification for MVP, with future mitigation options (e.g., always return 202).
 
 ## 4. Validation and Business Logic
 

@@ -90,8 +90,8 @@ Rationale: Internal analytics endpoint offers non-user value; defer until core u
 
 ### Phase 7: Remaining Authentication & Core Infrastructure
 
-32. `POST /auth/signout`
-33. `POST /auth/reset-password`
+32. `POST /auth/signout` (done)
+33. `POST /auth/reset-password` (done)
 
 ---
 

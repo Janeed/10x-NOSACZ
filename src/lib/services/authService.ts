@@ -4,11 +4,12 @@ import type { Database } from "../../db/database.types.ts";
 import {
   conflictError,
   internalError,
+  notFoundError,
   unauthorizedError,
   tooManyRequestsError,
   validationError,
 } from "../errors.ts";
-import type { AuthSigninParsed, AuthSignupParsed } from "../validation/auth.ts";
+import type { AuthSigninParsed, AuthSignupParsed, AuthResetPasswordParsed } from "../validation/auth.ts";
 
 export interface SignUpResult {
   userId: string;
@@ -217,4 +218,122 @@ export async function signIn(
     accessToken: data.session.access_token,
     refreshToken: data.session.refresh_token,
   };
+}
+
+export async function signOut(
+  supabase: SupabaseClient<Database>,
+): Promise<void> {
+  if (!supabase) {
+    throw internalError(
+      "SUPABASE_CLIENT_MISSING",
+      "Supabase client is not available",
+    );
+  }
+
+  let result;
+  try {
+    result = await supabase.auth.signOut();
+  } catch (cause) {
+    throw internalError("SUPABASE_UNAVAILABLE", "Signout service unavailable", {
+      cause,
+    });
+  }
+
+  const { error } = result;
+
+  if (error) {
+    const details = {
+      supabaseStatus: error instanceof AuthApiError ? error.status : null,
+      supabaseMessage: error.message,
+    };
+
+    if (error instanceof AuthApiError) {
+      if (error.status === 429) {
+        throw tooManyRequestsError(
+          "RATE_LIMITED",
+          "Too many signout attempts. Try again later.",
+          details,
+        );
+      }
+
+      if (error.status >= 400 && error.status < 500) {
+        throw unauthorizedError(
+          "INVALID_SESSION",
+          "Invalid session",
+          details,
+        );
+      }
+    }
+
+    throw internalError("SUPABASE_ERROR", "Signout failed", {
+      details,
+      cause: error,
+    });
+  }
+}
+
+export async function resetPassword(
+  supabase: SupabaseClient<Database>,
+  { email }: AuthResetPasswordParsed,
+): Promise<{ accepted: boolean }> {
+  if (!supabase) {
+    throw internalError(
+      "SUPABASE_CLIENT_MISSING",
+      "Supabase client is not available",
+    );
+  }
+
+  // Get redirect URL from env, fallback to origin
+  const redirectTo = process.env.PUBLIC_RESET_PASSWORD_REDIRECT_URL || "https://nosacz.com/reset-password";
+
+  let result;
+  try {
+    result = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  } catch (cause) {
+    throw internalError("SUPABASE_UNAVAILABLE", "Reset password service unavailable", {
+      cause,
+    });
+  }
+
+  const { error } = result;
+
+  if (error) {
+    const details = {
+      supabaseStatus: error instanceof AuthApiError ? error.status : null,
+      supabaseMessage: error.message,
+    };
+
+    if (error instanceof AuthApiError) {
+      if (error.status === 429) {
+        throw tooManyRequestsError(
+          "RATE_LIMITED",
+          "Too many reset password attempts. Try again later.",
+          details,
+        );
+      }
+
+      if (error.status === 404) {
+        throw notFoundError(
+          "EMAIL_NOT_FOUND",
+          "Email not found",
+          details,
+        );
+      }
+
+      if (error.status >= 400 && error.status < 500) {
+        throw validationError(
+          "VALIDATION_ERROR",
+          "Reset password request rejected",
+          details,
+        );
+      }
+    }
+
+    throw internalError("SUPABASE_ERROR", "Reset password failed", {
+      details,
+      cause: error,
+    });
+  }
+
+  return { accepted: true };
 }
