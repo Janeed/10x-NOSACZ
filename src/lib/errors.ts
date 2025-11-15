@@ -96,3 +96,12 @@ export const internalError = (
 export const isApiError = (error: unknown): error is ApiError => {
   return error instanceof ApiError;
 };
+
+// Error codes for monthly execution logs
+export const ERR_VALIDATION = "ERR_VALIDATION";
+export const ERR_UNIQUE_CONSTRAINT = "ERR_UNIQUE_CONSTRAINT";
+export const ERR_NOT_FOUND = "ERR_NOT_FOUND";
+export const ERR_INVALID_STATUS_TRANSITION = "ERR_INVALID_STATUS_TRANSITION";
+export const ERR_CLOSED_LOAN = "ERR_CLOSED_LOAN";
+export const ERR_INTERNAL = "ERR_INTERNAL";
+export const ERR_UNAUTHORIZED = "ERR_UNAUTHORIZED";

@@ -63,9 +63,9 @@ Rationale:
 22. `GET /api/simulation-loan-snapshots` (optional for MVP)
 23. `GET /api/simulation-history-metrics`  (optional for MVP)
 24. `POST /api/simulation-history-metrics` (service role) (optional for MVP)
-25. `POST /api/monthly-execution-logs`
-26. `GET /api/monthly-execution-logs`
-27. `PATCH /api/monthly-execution-logs/{logId}`
+25. `POST /api/monthly-execution-logs` (done)
+26. `GET /api/monthly-execution-logs` (done)
+27. `PATCH /api/monthly-execution-logs/{logId}` (done)
 28. `GET /api/adherence-metrics` (optional for MVP)
 29. `PUT /api/adherence-metrics` (service role recompute) (optional for MVP)
 
