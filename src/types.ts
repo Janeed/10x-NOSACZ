@@ -292,6 +292,19 @@ export type SimulationDetailDto = SimulationDto & {
 export type SimulationActivationResponse = SimulationDetailDto;
 export type SimulationCancelResponse = SimulationDetailDto;
 
+export interface ActiveSimulationDashboardDto extends SimulationDetailDto {
+  currentMonthSchedule: {
+    monthStart: Date;
+    entries: Array<{
+      loanId: string;
+      scheduledPayment: number;
+      scheduledOverpayment: number;
+      paymentStatus: string;
+      overpaymentStatus: string;
+    }>;
+  };
+}
+
 // Monthly Execution Logs
 export interface MonthlyExecutionLogDto {
   id: MonthlyExecutionLogRow["id"];

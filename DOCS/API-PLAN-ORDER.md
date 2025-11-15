@@ -45,12 +45,12 @@ Rationale:
 
 ### Phase 3: Simulation Enablement
 
-16. `POST /api/simulations` (enqueue run)
-17. `GET /api/simulations` (list/history)
-18. `GET /api/simulations/{simulationId}` (details/results)
-19. `POST /api/simulations/{simulationId}/cancel`
-20. `POST /api/simulations/{simulationId}/activate`
-21. `GET /api/simulations/active`
+16. `POST /api/simulations` (enqueue run) (done)
+17. `GET /api/simulations` (list/history) (done)
+18. `GET /api/simulations/{simulationId}` (details/results) (done)
+19. `POST /api/simulations/{simulationId}/cancel` (done)
+20. `POST /api/simulations/{simulationId}/activate` (done)
+21. `GET /api/simulations/active` (done)
 
 Rationale:
 
@@ -60,14 +60,14 @@ Rationale:
 
 ### Phase 4: Operational Logging & Metrics Production
 
-22. `GET /api/simulation-loan-snapshots`
-23. `GET /api/simulation-history-metrics`
-24. `POST /api/simulation-history-metrics` (service role)
+22. `GET /api/simulation-loan-snapshots` (optional for MVP)
+23. `GET /api/simulation-history-metrics`  (optional for MVP)
+24. `POST /api/simulation-history-metrics` (service role) (optional for MVP)
 25. `POST /api/monthly-execution-logs`
 26. `GET /api/monthly-execution-logs`
 27. `PATCH /api/monthly-execution-logs/{logId}`
-28. `GET /api/adherence-metrics`
-29. `PUT /api/adherence-metrics` (service role recompute)
+28. `GET /api/adherence-metrics` (optional for MVP)
+29. `PUT /api/adherence-metrics` (service role recompute) (optional for MVP)
 
 Rationale:
 
@@ -84,7 +84,7 @@ Rationale: The dashboard aggregates across active simulation, loans, snapshots, 
 
 ### Phase 6: Administrative / Monitoring (Future Scope)
 
-31. `GET /api/admin/metrics/resimulations`
+31. `GET /api/admin/metrics/resimulations` (optional for MVP)
 
 Rationale: Internal analytics endpoint offers non-user value; defer until core user-facing features stabilize. Requires historical staleness/resimulation tracking already produced by prior phases.
 
