@@ -105,3 +105,16 @@ export const ERR_INVALID_STATUS_TRANSITION = "ERR_INVALID_STATUS_TRANSITION";
 export const ERR_CLOSED_LOAN = "ERR_CLOSED_LOAN";
 export const ERR_INTERNAL = "ERR_INTERNAL";
 export const ERR_UNAUTHORIZED = "ERR_UNAUTHORIZED";
+
+// Dashboard-specific errors
+export class ActiveSimulationNotFoundError extends ApiError {
+  constructor() {
+    super(404, "ERR_ACTIVE_SIMULATION_NOT_FOUND", "Active simulation required for dashboard");
+  }
+}
+
+export class InvalidIncludeError extends ApiError {
+  constructor(message: string) {
+    super(400, "ERR_INVALID_INCLUDE", message);
+  }
+}

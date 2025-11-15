@@ -19,6 +19,7 @@ import {
   notFoundError,
   validationError,
 } from "../errors.ts";
+import { invalidateDashboardCache } from "./dashboardService.ts";
 import { logger } from "../logger.ts";
 
 type SimulationDetailQuery = { include?: string[] };
@@ -544,6 +545,9 @@ export const activateSimulation = async (
     requestId: "N/A",
   });
 
+  // Invalidate dashboard cache since active simulation changed
+  invalidateDashboardCache(userId);
+
   // Return the activated simulation detail
   return await getSimulationDetail(supabase, userId, id);
 };
@@ -603,6 +607,9 @@ export const cancelSimulation = async (
     userId,
     requestId: "N/A",
   });
+
+  // Invalidate dashboard cache since active simulation changed
+  invalidateDashboardCache(userId);
 
   // Return cancelled simulation detail
   return await getSimulationDetail(supabase, userId, id);

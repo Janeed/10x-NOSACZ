@@ -78,7 +78,7 @@ Rationale:
 
 ### Phase 5: Aggregation & Dashboard Experience
 
-30. `GET /api/dashboard/overview`
+30. `GET /api/dashboard/overview` (done)
 
 Rationale: The dashboard aggregates across active simulation, loans, snapshots, logs, and adherence metrics. Building it after all producers reduces rework and enables meaningful caching strategies (5‑minute window) backed by real data.
 

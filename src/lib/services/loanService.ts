@@ -18,6 +18,7 @@ import {
   preconditionError,
   validationError,
 } from "../errors.ts";
+import { invalidateDashboardCache } from "./dashboardService.ts";
 import { markActiveSimulationStale } from "./simulationService";
 
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
@@ -500,6 +501,9 @@ export async function createLoan(
     dto.staleSimulation = true;
   }
 
+  // Invalidate dashboard cache since loan data changed
+  invalidateDashboardCache(resolvedUserId);
+
   return {
     loan: dto,
     etag: computeLoanETag(data),
@@ -610,6 +614,9 @@ export async function updateLoan(
   if (staleSimulation) {
     dto.staleSimulation = true;
   }
+
+  // Invalidate dashboard cache since loan data changed
+  invalidateDashboardCache(resolvedUserId);
 
   return {
     loan: dto,
@@ -726,6 +733,9 @@ export async function patchLoan(
     dto.staleSimulation = true;
   }
 
+  // Invalidate dashboard cache since loan data changed
+  invalidateDashboardCache(resolvedUserId);
+
   return {
     loan: dto,
     etag: computeLoanETag(data),
@@ -770,6 +780,9 @@ export async function deleteLoan(
     supabase,
     resolvedUserId,
   );
+
+  // Invalidate dashboard cache since loan data changed
+  invalidateDashboardCache(resolvedUserId);
 
   return { staleSimulation };
 }

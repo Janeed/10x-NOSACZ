@@ -6,6 +6,7 @@ import type {
   UserSettingsDto,
 } from "../../types.ts";
 import { conflictError, internalError, notFoundError } from "../errors.ts";
+import { invalidateDashboardCache } from "./dashboardService.ts";
 
 const SELECT_COLUMNS =
   "user_id, monthly_overpayment_limit, reinvest_reduced_payments, updated_at";
@@ -254,6 +255,9 @@ export async function upsertUserSettings(
       command,
     );
     if (createdRow) {
+      // Invalidate dashboard cache since user settings changed
+      invalidateDashboardCache(resolvedUserId);
+
       return {
         created: true,
         dto: toDto(createdRow),
@@ -275,6 +279,9 @@ export async function upsertUserSettings(
       refreshed,
       ifMatch,
     );
+    // Invalidate dashboard cache since user settings changed
+    invalidateDashboardCache(resolvedUserId);
+
     return {
       created: false,
       dto: toDto(updatedRow),
@@ -288,6 +295,9 @@ export async function upsertUserSettings(
     existing,
     ifMatch,
   );
+  // Invalidate dashboard cache since user settings changed
+  invalidateDashboardCache(resolvedUserId);
+
   return {
     created: false,
     dto: toDto(updatedRow),

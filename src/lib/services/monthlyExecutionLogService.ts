@@ -15,6 +15,7 @@ import {
   validationError,
 } from "../errors";
 import { logger } from "../logger";
+import { invalidateDashboardCache } from "./dashboardService";
 
 type MonthlyExecutionLogRow = Database["public"]["Tables"]["monthly_execution_logs"]["Row"];
 type MonthlyExecutionLogInsert = Database["public"]["Tables"]["monthly_execution_logs"]["Insert"];
@@ -241,6 +242,9 @@ export const createLog = async (
 
   logger.info("create_log", "Monthly execution log created", { userId, logId: data.id, requestId });
 
+  // Invalidate dashboard cache since execution log data changed
+  invalidateDashboardCache(userId);
+
   return toDto(data);
 };
 
@@ -347,6 +351,9 @@ export const patchLog = async (
   }
 
   logger.info("patch_log", "Monthly execution log patched", { userId, logId, requestId, staleSimulation });
+
+  // Invalidate dashboard cache since execution log data changed
+  invalidateDashboardCache(userId);
 
   const dto = toDto(data);
   dto.staleSimulation = staleSimulation;
