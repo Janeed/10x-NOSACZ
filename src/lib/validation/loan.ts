@@ -62,7 +62,7 @@ const parseFirstOfMonth = (
     return z.NEVER;
   }
 
-  const [year, month, day] = match;
+  const [, year, month, day] = match;
   const isoCandidate = `${year}-${month}-${day}`;
   const date = new Date(`${isoCandidate}T00:00:00.000Z`);
   if (Number.isNaN(date.getTime())) {

@@ -123,4 +123,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  input,
+  select,
+  textarea {
+    @apply text-slate-900 placeholder:text-slate-500;
+  }
+  .dark input,
+  .dark select,
+  .dark textarea {
+    @apply text-slate-600 placeholder:text-slate-400;
+  }
 }

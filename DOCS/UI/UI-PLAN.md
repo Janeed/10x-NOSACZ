@@ -79,7 +79,7 @@
   - API endpoints: `GET /api/strategies`, `POST /api/simulations`, `GET /api/simulations/{id}`, `POST /api/simulations/{id}/cancel`, `POST /api/simulations/{id}/activate` (if needed), `GET /api/loans`, `GET /api/user-settings`.
   - PRD stories: US-009, US-013, US-014, US-015, US-010, US-011, US-012, US-016, US-018, US-019 (optional), US-020 (optional), US-047.
 
-- Loans (List + Sidebar Editor)
+- Loans (List + Sidebar Editor) (done)
   - Path: `/loans`
   - Main purpose: Manage loans with simple list and a sidebar editor using explicit Save/Cancel.
   - Key information:
