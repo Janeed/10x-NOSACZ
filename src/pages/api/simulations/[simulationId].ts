@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 
     // Parse include param
     const url = new URL(request.url);
-    const includeParam = url.searchParams.get("include");
+    const includeParam = url.searchParams.get("include") ?? undefined;
     const includeValidation = includeParamSchema.safeParse(includeParam);
     if (!includeValidation.success) {
       return errorResponse(

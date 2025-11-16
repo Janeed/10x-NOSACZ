@@ -54,7 +54,18 @@ export const simulationIdParamSchema = z.string().uuid();
 export const includeParamSchema = z
   .string()
   .optional()
-  .transform((val) => val?.split(","))
+  .transform((val) => {
+    if (!val) {
+      return undefined;
+    }
+
+    const segments = val
+      .split(",")
+      .map((segment) => segment.trim())
+      .filter((segment) => segment.length > 0);
+
+    return segments.length > 0 ? segments : undefined;
+  })
   .refine(
     (val) => {
       if (!val) return true;

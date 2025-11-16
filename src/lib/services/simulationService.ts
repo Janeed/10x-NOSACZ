@@ -256,6 +256,57 @@ export const queueSimulation = async (
     );
   }
 
+  // Deactivate existing active simulation before promoting the new run
+  const { data: activeSimulations, error: activeFetchError } = await supabase
+    .from("simulations")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_active", true);
+
+  if (activeFetchError) {
+    throw internalError(
+      "SUPABASE_ERROR",
+      "Failed to check for active simulations",
+      {
+        cause: activeFetchError,
+        details: withSupabaseError(activeFetchError),
+      },
+    );
+  }
+
+  if (activeSimulations && activeSimulations.length > 0) {
+    const { error: deactivateError } = await supabase
+      .from("simulations")
+      .update({
+        is_active: false,
+        stale: true,
+        status: "stale",
+      })
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    if (deactivateError) {
+      throw internalError(
+        "SUPABASE_ERROR",
+        "Failed to deactivate existing active simulation",
+        {
+          cause: deactivateError,
+          details: withSupabaseError(deactivateError),
+        },
+      );
+    }
+
+    logger.info(
+      "simulation_queue_deactivate_previous",
+      "Deactivated previous active simulation",
+      {
+        userId,
+        previousSimulationIds: activeSimulations.map((sim) => sim.id),
+        requestId: "N/A",
+      },
+    );
+  }
+
   // Load user settings if monthlyOverpaymentLimit not provided
   let monthlyOverpaymentLimit = cmd.monthlyOverpaymentLimit;
   if (monthlyOverpaymentLimit === undefined) {
@@ -276,6 +327,7 @@ export const queueSimulation = async (
   }
 
   // Insert new simulation
+  const nowIso = new Date().toISOString();
   const insertData = {
     user_id: userId,
     strategy: cmd.strategy,
@@ -285,15 +337,16 @@ export const queueSimulation = async (
     payment_reduction_target: cmd.paymentReductionTarget,
     notes: cmd.notes,
     status: "running" as const,
-    is_active: false,
+    is_active: true,
     stale: false,
-    created_at: new Date().toISOString(),
+    created_at: nowIso,
+    started_at: nowIso,
   };
 
   const { data: newSimulation, error: insertError } = await supabase
     .from("simulations")
     .insert(insertData)
-    .select("id, created_at")
+    .select("id, created_at, started_at, is_active")
     .single();
 
   if (insertError) {
@@ -311,11 +364,13 @@ export const queueSimulation = async (
     requestId: "N/A", // TODO: pass requestId
   });
 
+  invalidateDashboardCache(userId);
+
   return {
     simulationId: newSimulation.id,
     status: "running",
-    isActive: false,
-    queuedAt: newSimulation.created_at,
+    isActive: newSimulation.is_active,
+    queuedAt: newSimulation.started_at ?? newSimulation.created_at,
   };
 };
 

@@ -560,7 +560,7 @@ export const LoanEditorSidebar = ({
       apiFetch,
       buildCommandPayload,
       clearErrors,
-  effectiveEtag,
+      effectiveEtag,
       isSubmitting,
       loan,
       mode,
