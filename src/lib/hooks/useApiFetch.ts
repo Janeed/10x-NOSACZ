@@ -171,7 +171,7 @@ const encodeBody = (body: unknown): BodyInit | undefined => {
  * and extracts commonly used response metadata.
  */
 export function useApiFetch() {
-  const { getAccessToken } = useSession();
+  const { getAccessToken, clearSession } = useSession();
 
   const apiFetch = useCallback(
     async <TResponse, TBody = unknown>(
@@ -221,6 +221,18 @@ export function useApiFetch() {
         const meta = buildMeta(responseHeaders);
 
         if (!response.ok) {
+          if (response.status === 401) {
+            clearSession();
+
+            if (typeof window !== "undefined") {
+              const alreadyOnSignin = window.location.pathname === "/auth/signin";
+
+              if (!alreadyOnSignin) {
+                window.location.replace("/auth/signin");
+              }
+            }
+          }
+
           const error = await buildApiError(response);
           return {
             ok: false,
@@ -274,7 +286,7 @@ export function useApiFetch() {
         } satisfies ApiFetchFailure;
       }
     },
-    [getAccessToken],
+    [getAccessToken, clearSession],
   );
 
   return { apiFetch } as const;
