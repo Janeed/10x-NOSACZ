@@ -19,7 +19,11 @@ const readSession = (): SessionTokens | null => {
 
   try {
     const parsed = JSON.parse(raw) as SessionTokens;
-    if (parsed && typeof parsed.accessToken === "string" && typeof parsed.refreshToken === "string") {
+    if (
+      parsed &&
+      typeof parsed.accessToken === "string" &&
+      typeof parsed.refreshToken === "string"
+    ) {
       return parsed;
     }
   } catch (error) {

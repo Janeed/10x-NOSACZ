@@ -38,7 +38,11 @@ export const POST: APIRoute = async ({ params, locals }) => {
     const simulationId = idValidation.data;
 
     // Call service
-    const result: SimulationActivationResponse = await activateSimulation(supabase, userId, simulationId);
+    const result: SimulationActivationResponse = await activateSimulation(
+      supabase,
+      userId,
+      simulationId,
+    );
 
     logger.info(EVENT_ACTIVATE, "Simulation activated", {
       userId: hashUserId(userId),

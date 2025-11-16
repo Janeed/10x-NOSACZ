@@ -5,7 +5,10 @@ import { unauthorizedError, validationError } from "../../../lib/errors.ts";
 import { errorResponse, ok } from "../../../lib/http/responses.ts";
 import { logger } from "../../../lib/logger.ts";
 import { getSimulationDetail } from "../../../lib/services/simulationService.ts";
-import { simulationIdParamSchema, includeParamSchema } from "../../../lib/validation/simulation.ts";
+import {
+  simulationIdParamSchema,
+  includeParamSchema,
+} from "../../../lib/validation/simulation.ts";
 import type { SimulationDetailDto } from "../../../types.ts";
 
 const EVENT_DETAIL = "simulations.detail";
@@ -50,7 +53,12 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
     const include = includeValidation.data;
 
     // Call service
-    const result: SimulationDetailDto = await getSimulationDetail(supabase, userId, simulationId, include);
+    const result: SimulationDetailDto = await getSimulationDetail(
+      supabase,
+      userId,
+      simulationId,
+      include,
+    );
 
     logger.info(EVENT_DETAIL, "Simulation detail fetched", {
       userId: hashUserId(userId),

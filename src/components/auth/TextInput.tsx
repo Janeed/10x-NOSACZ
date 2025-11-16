@@ -35,7 +35,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   ) => {
     const descriptionId = description ? `${id}-description` : undefined;
     const errorId = error ? `${id}-error` : undefined;
-    const describedBy = [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
+    const describedBy =
+      [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       onChange(event.target.value);
@@ -43,7 +44,10 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
 
     return (
       <div className={cn("space-y-1", className)}>
-        <label htmlFor={id} className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor={id}
+          className="block text-sm font-medium text-foreground"
+        >
           {label}
         </label>
         {description ? (

@@ -117,7 +117,7 @@ export const PUT: APIRoute = async ({ locals, request }) => {
       command,
       normalizedIfMatch,
     );
-  await markActiveSimulationStale(locals.supabase, userId);
+    await markActiveSimulationStale(locals.supabase, userId);
 
     const logContext: Record<string, unknown> = {
       userId,

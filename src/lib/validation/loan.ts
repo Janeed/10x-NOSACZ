@@ -19,11 +19,7 @@ export interface ValidationResult<T> {
   errors?: LoanValidationIssue[];
 }
 
-const SORT_FIELDS = [
-  "created_at",
-  "start_month",
-  "remaining_balance",
-] as const;
+const SORT_FIELDS = ["created_at", "start_month", "remaining_balance"] as const;
 
 const ORDER_VALUES = ["asc", "desc"] as const;
 
@@ -66,7 +62,7 @@ const parseFirstOfMonth = (
     return z.NEVER;
   }
 
-  const [_, year, month, day] = match;
+  const [year, month, day] = match;
   const isoCandidate = `${year}-${month}-${day}`;
   const date = new Date(`${isoCandidate}T00:00:00.000Z`);
   if (Number.isNaN(date.getTime())) {
@@ -308,7 +304,10 @@ export const validateCreateLoan = (
   }
 
   const data = parsed.data;
-  const issues = validateRemainingBalance(data.principal, data.remainingBalance);
+  const issues = validateRemainingBalance(
+    data.principal,
+    data.remainingBalance,
+  );
   if (issues.length > 0) {
     return { errors: issues };
   }
@@ -330,7 +329,11 @@ export const validateUpdateLoan = (
     ...validateRemainingBalance(data.principal, data.remainingBalance),
   );
   issues.push(
-    ...validateClosedState(data.isClosed, data.remainingBalance, data.closedMonth),
+    ...validateClosedState(
+      data.isClosed,
+      data.remainingBalance,
+      data.closedMonth,
+    ),
   );
 
   if (issues.length > 0) {
@@ -368,11 +371,17 @@ export const validatePatchLoan = (
   const closedMonth =
     data.closedMonth !== undefined
       ? data.closedMonth
-      : existing.closedMonth ?? undefined;
+      : (existing.closedMonth ?? undefined);
 
   const issues: LoanValidationIssue[] = [];
   issues.push(...validateRemainingBalance(principal, remainingBalance));
-  issues.push(...validateClosedState(isClosed, remainingBalance, closedMonth ?? undefined));
+  issues.push(
+    ...validateClosedState(
+      isClosed,
+      remainingBalance,
+      closedMonth ?? undefined,
+    ),
+  );
 
   if (issues.length > 0) {
     return { errors: issues };

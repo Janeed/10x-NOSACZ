@@ -207,10 +207,14 @@ const recordLoanChangeEvents = async (
   const { error } = result;
 
   if (error) {
-    throw internalError("SUPABASE_ERROR", "Failed to record loan change events", {
-      cause: error,
-      details: withSupabaseError(error),
-    });
+    throw internalError(
+      "SUPABASE_ERROR",
+      "Failed to record loan change events",
+      {
+        cause: error,
+        details: withSupabaseError(error),
+      },
+    );
   }
 };
 

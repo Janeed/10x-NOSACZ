@@ -1,6 +1,5 @@
 import type { Database } from "../../db/database.types.ts";
 import type {
-  ActiveSimulationSummary,
   DashboardOverviewLoanItem,
   DashboardOverviewAdherence,
 } from "../../types.ts";
@@ -19,7 +18,6 @@ import type {
  */
 export const computeLoanMetrics = (
   loan: Database["public"]["Tables"]["loans"]["Row"],
-  activeSimulation: ActiveSimulationSummary | null,
 ): DashboardOverviewLoanItem => {
   const remainingBalance = loan.remaining_balance;
   const annualRate = loan.annual_rate;
@@ -31,7 +29,9 @@ export const computeLoanMetrics = (
   if (!loan.is_closed && remainingBalance > 0) {
     const monthlyRate = annualRate / 12;
     if (monthlyRate > 0) {
-      monthlyPayment = (monthlyRate * remainingBalance) / (1 - Math.pow(1 + monthlyRate, -termMonths));
+      monthlyPayment =
+        (monthlyRate * remainingBalance) /
+        (1 - Math.pow(1 + monthlyRate, -termMonths));
     }
   }
 
@@ -39,12 +39,27 @@ export const computeLoanMetrics = (
   let monthsRemaining = 0;
   if (!loan.is_closed && remainingBalance > 0 && monthlyPayment > 0) {
     const monthlyRate = annualRate / 12;
-    monthsRemaining = Math.ceil(-Math.log(1 - (remainingBalance * monthlyRate) / monthlyPayment) / Math.log(1 + monthlyRate));
-    monthsRemaining = Math.max(0, Math.min(monthsRemaining, originalTermMonths - (new Date().getFullYear() * 12 + new Date().getMonth() - new Date(loan.start_month).getFullYear() * 12 - new Date(loan.start_month).getMonth())));
+    monthsRemaining = Math.ceil(
+      -Math.log(1 - (remainingBalance * monthlyRate) / monthlyPayment) /
+        Math.log(1 + monthlyRate),
+    );
+    monthsRemaining = Math.max(
+      0,
+      Math.min(
+        monthsRemaining,
+        originalTermMonths -
+          (new Date().getFullYear() * 12 +
+            new Date().getMonth() -
+            new Date(loan.start_month).getFullYear() * 12 -
+            new Date(loan.start_month).getMonth()),
+      ),
+    );
   }
 
   // Calculate progress
-  const progress = loan.principal ? (loan.principal - remainingBalance) / loan.principal : 0;
+  const progress = loan.principal
+    ? (loan.principal - remainingBalance) / loan.principal
+    : 0;
 
   // Interest saved - MVP: 0
   const interestSavedToDate = 0;
@@ -67,7 +82,10 @@ export const computeLoanMetrics = (
  * @param skipped - Number of overpayments skipped
  * @returns The ratio as a number between 0 and 1
  */
-export const calculateAdherenceRatio = (executed: number, skipped: number): number => {
+export const calculateAdherenceRatio = (
+  executed: number,
+  skipped: number,
+): number => {
   return executed + skipped > 0 ? executed / (executed + skipped) : 0;
 };
 

@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ locals, request }) => {
     // Parse include query parameter
     const url = new URL(request.url);
     const includeParam = url.searchParams.get("include");
-    const include = parseInclude(includeParam!);
+    const include = parseInclude(includeParam ?? undefined);
 
     const dashboardOverview = await getDashboardOverview(
       locals.supabase,
@@ -70,13 +70,18 @@ export const GET: APIRoute = async ({ locals, request }) => {
     if (error instanceof ActiveSimulationNotFoundError) {
       logContext.status = 404;
       logContext.code = error.code;
-      logger.warn("dashboard.overview.noActiveSimulation", error.message, logContext);
+      logger.warn(
+        "dashboard.overview.noActiveSimulation",
+        error.message,
+        logContext,
+      );
 
       return errorResponse(error, requestId);
     }
 
     // Handle other errors
-    const apiError = error instanceof Error ? error : new Error("Unknown error");
+    const apiError =
+      error instanceof Error ? error : new Error("Unknown error");
 
     logContext.status = 500;
     logContext.code = "INTERNAL_ERROR";

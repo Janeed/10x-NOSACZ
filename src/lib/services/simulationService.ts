@@ -22,18 +22,16 @@ import {
 import { invalidateDashboardCache } from "./dashboardService.ts";
 import { logger } from "../logger.ts";
 
-type SimulationDetailQuery = { include?: string[] };
-
 type ActiveSimulationDashboardDto = SimulationDetailDto & {
   currentMonthSchedule: {
     monthStart: Date;
-    entries: Array<{
+    entries: {
       loanId: string;
       scheduledPayment: number;
       scheduledOverpayment: number;
       paymentStatus: string;
       overpaymentStatus: string;
-    }>;
+    }[];
   };
 };
 
@@ -158,18 +156,17 @@ export const listSimulations = async (
   const { data, error, count } = await selectQuery;
 
   if (error) {
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to fetch simulations",
-      {
-        cause: error,
-        details: withSupabaseError(error),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to fetch simulations", {
+      cause: error,
+      details: withSupabaseError(error),
+    });
   }
 
   if (!data) {
-    throw internalError("SUPABASE_ERROR", "No data returned from simulations query");
+    throw internalError(
+      "SUPABASE_ERROR",
+      "No data returned from simulations query",
+    );
   }
 
   const totalItems = count ?? 0;
@@ -248,11 +245,15 @@ export const queueSimulation = async (
       );
     }
 
-    logger.info("simulation_queue_cancel_previous", "Cancelled previous running simulation", {
-      userId,
-      previousSimulationId: runningSimulations[0].id,
-      requestId: "N/A", // TODO: pass requestId if available
-    });
+    logger.info(
+      "simulation_queue_cancel_previous",
+      "Cancelled previous running simulation",
+      {
+        userId,
+        previousSimulationId: runningSimulations[0].id,
+        requestId: "N/A", // TODO: pass requestId if available
+      },
+    );
   }
 
   // Load user settings if monthlyOverpaymentLimit not provided
@@ -265,14 +266,10 @@ export const queueSimulation = async (
       .single();
 
     if (settingsError) {
-      throw internalError(
-        "SUPABASE_ERROR",
-        "Failed to load user settings",
-        {
-          cause: settingsError,
-          details: withSupabaseError(settingsError),
-        },
-      );
+      throw internalError("SUPABASE_ERROR", "Failed to load user settings", {
+        cause: settingsError,
+        details: withSupabaseError(settingsError),
+      });
     }
 
     monthlyOverpaymentLimit = userSettings.monthly_overpayment_limit;
@@ -300,14 +297,10 @@ export const queueSimulation = async (
     .single();
 
   if (insertError) {
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to queue simulation",
-      {
-        cause: insertError,
-        details: withSupabaseError(insertError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to queue simulation", {
+      cause: insertError,
+      details: withSupabaseError(insertError),
+    });
   }
 
   logger.info("simulation_queue_requested", "Simulation queued", {
@@ -341,17 +334,14 @@ export const getSimulationDetail = async (
     .single();
 
   if (simError) {
-    if (simError.code === "PGRST116") { // Not found
+    if (simError.code === "PGRST116") {
+      // Not found
       throw notFoundError("SIMULATION_NOT_FOUND", "Simulation not found");
     }
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to fetch simulation",
-      {
-        cause: simError,
-        details: withSupabaseError(simError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to fetch simulation", {
+      cause: simError,
+      details: withSupabaseError(simError),
+    });
   }
 
   const baseDto: SimulationDto = {
@@ -419,19 +409,21 @@ export const getSimulationDetail = async (
 
   let historyMetrics: SimulationHistoryMetricDto[] | undefined;
   if (latestMetric && !metricError) {
-    historyMetrics = [{
-      id: latestMetric.id,
-      simulationId: latestMetric.simulation_id,
-      userId: latestMetric.user_id,
-      goal: latestMetric.goal,
-      strategy: latestMetric.strategy,
-      capturedAt: latestMetric.captured_at,
-      baselineInterest: latestMetric.baseline_interest,
-      totalInterestSaved: latestMetric.total_interest_saved,
-      monthlyPaymentTotal: latestMetric.monthly_payment_total,
-      monthsToPayoff: latestMetric.months_to_payoff,
-      payoffMonth: latestMetric.payoff_month,
-    }];
+    historyMetrics = [
+      {
+        id: latestMetric.id,
+        simulationId: latestMetric.simulation_id,
+        userId: latestMetric.user_id,
+        goal: latestMetric.goal,
+        strategy: latestMetric.strategy,
+        capturedAt: latestMetric.captured_at,
+        baselineInterest: latestMetric.baseline_interest,
+        totalInterestSaved: latestMetric.total_interest_saved,
+        monthlyPaymentTotal: latestMetric.monthly_payment_total,
+        monthsToPayoff: latestMetric.months_to_payoff,
+        payoffMonth: latestMetric.payoff_month,
+      },
+    ];
   } else if (metricError && metricError.code !== "PGRST116") {
     throw internalError(
       "SUPABASE_ERROR",
@@ -470,23 +462,25 @@ export const activateSimulation = async (
     if (fetchError.code === "PGRST116") {
       throw notFoundError("SIMULATION_NOT_FOUND", "Simulation not found");
     }
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to fetch simulation",
-      {
-        cause: fetchError,
-        details: withSupabaseError(fetchError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to fetch simulation", {
+      cause: fetchError,
+      details: withSupabaseError(fetchError),
+    });
   }
 
   // Validate status
   if (targetSim.status !== "completed") {
-    throw validationError("SIMULATION_NOT_COMPLETED", "Simulation must be completed to activate");
+    throw validationError(
+      "SIMULATION_NOT_COMPLETED",
+      "Simulation must be completed to activate",
+    );
   }
 
   if (targetSim.stale) {
-    throw validationError("SIMULATION_STALE", "Cannot activate stale simulation");
+    throw validationError(
+      "SIMULATION_STALE",
+      "Cannot activate stale simulation",
+    );
   }
 
   // Clear previous active simulation
@@ -516,7 +510,8 @@ export const activateSimulation = async (
 
   if (activateError) {
     // Check if unique constraint violation (assuming it's a conflict)
-    if (activateError.code === "23505") { // Unique violation
+    if (activateError.code === "23505") {
+      // Unique violation
       // Retry once: refetch and try again
       const { error: retryError } = await supabase
         .from("simulations")
@@ -525,17 +520,16 @@ export const activateSimulation = async (
         .eq("user_id", userId);
 
       if (retryError) {
-        throw conflictError("ACTIVE_CONFLICT", "Failed to activate simulation due to conflict");
+        throw conflictError(
+          "ACTIVE_CONFLICT",
+          "Failed to activate simulation due to conflict",
+        );
       }
     } else {
-      throw internalError(
-        "SUPABASE_ERROR",
-        "Failed to activate simulation",
-        {
-          cause: activateError,
-          details: withSupabaseError(activateError),
-        },
-      );
+      throw internalError("SUPABASE_ERROR", "Failed to activate simulation", {
+        cause: activateError,
+        details: withSupabaseError(activateError),
+      });
     }
   }
 
@@ -569,19 +563,18 @@ export const cancelSimulation = async (
     if (fetchError.code === "PGRST116") {
       throw notFoundError("SIMULATION_NOT_FOUND", "Simulation not found");
     }
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to fetch simulation",
-      {
-        cause: fetchError,
-        details: withSupabaseError(fetchError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to fetch simulation", {
+      cause: fetchError,
+      details: withSupabaseError(fetchError),
+    });
   }
 
   // Check status
   if (simulation.status !== "running") {
-    throw conflictError("SIMULATION_CANCEL_CONFLICT", "Simulation is not running and cannot be cancelled");
+    throw conflictError(
+      "SIMULATION_CANCEL_CONFLICT",
+      "Simulation is not running and cannot be cancelled",
+    );
   }
 
   // Update to cancelled
@@ -592,14 +585,10 @@ export const cancelSimulation = async (
     .eq("user_id", userId);
 
   if (updateError) {
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to cancel simulation",
-      {
-        cause: updateError,
-        details: withSupabaseError(updateError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to cancel simulation", {
+      cause: updateError,
+      details: withSupabaseError(updateError),
+    });
   }
 
   logger.info("simulation_cancel", "Simulation cancelled", {
@@ -631,35 +620,40 @@ export const getActiveSimulationDashboard = async (
     if (fetchError.code === "PGRST116") {
       throw notFoundError("ACTIVE_NOT_FOUND", "No active simulation found");
     }
-    throw internalError(
-      "SUPABASE_ERROR",
-      "Failed to fetch active simulation",
-      {
-        cause: fetchError,
-        details: withSupabaseError(fetchError),
-      },
-    );
+    throw internalError("SUPABASE_ERROR", "Failed to fetch active simulation", {
+      cause: fetchError,
+      details: withSupabaseError(fetchError),
+    });
   }
 
   // Check if stale
   if (activeSim.stale) {
-    throw notFoundError("ACTIVE_SIMULATION_STALE", "Active simulation is stale");
+    throw notFoundError(
+      "ACTIVE_SIMULATION_STALE",
+      "Active simulation is stale",
+    );
   }
 
   // Get detail with loan snapshots
-  const detail = await getSimulationDetail(supabase, userId, activeSim.id, ["loanSnapshots"]);
+  const detail = await getSimulationDetail(supabase, userId, activeSim.id, [
+    "loanSnapshots",
+  ]);
 
   // Compute current month schedule (placeholder algorithm)
   const currentMonth = new Date();
-  const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const monthStart = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1,
+  );
 
-  let scheduleEntries: Array<{
+  let scheduleEntries: {
     loanId: string;
     scheduledPayment: number;
     scheduledOverpayment: number;
     paymentStatus: string;
     overpaymentStatus: string;
-  }> = [];
+  }[] = [];
 
   if (detail.loanSnapshots) {
     // Placeholder: for each loan, assume fixed payment and overpayment

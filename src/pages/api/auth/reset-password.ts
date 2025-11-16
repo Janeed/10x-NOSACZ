@@ -2,7 +2,11 @@ import type { APIRoute } from "astro";
 import { randomUUID } from "node:crypto";
 
 import { validationError } from "../../../lib/errors.ts";
-import { errorResponse, jsonResponse, toApiError } from "../../../lib/http/responses.ts";
+import {
+  errorResponse,
+  jsonResponse,
+  toApiError,
+} from "../../../lib/http/responses.ts";
 import { logger } from "../../../lib/logger.ts";
 import { resetPassword } from "../../../lib/services/authService.ts";
 import { authResetPasswordSchema } from "../../../lib/validation/auth.ts";
@@ -74,9 +78,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const parsed = authResetPasswordSchema.safeParse(payload);
     if (!parsed.success) {
       const issues = parsed.error.issues.map((issue) => issue.message);
-      throw validationError("VALIDATION_ERROR", "Invalid reset password payload", {
-        issues,
-      });
+      throw validationError(
+        "VALIDATION_ERROR",
+        "Invalid reset password payload",
+        {
+          issues,
+        },
+      );
     }
 
     const supabase = locals.supabase;

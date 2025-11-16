@@ -20,7 +20,11 @@ const ERROR_TITLE_ID = "auth-error-summary-title";
 /**
  * Renders a focusable alert region to surface server or global form errors.
  */
-export function ErrorSummary({ errors, className, supportDetails }: ErrorSummaryProps) {
+export function ErrorSummary({
+  errors,
+  className,
+  supportDetails,
+}: ErrorSummaryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasErrors = errors.length > 0;
 
@@ -67,7 +71,9 @@ export function ErrorSummary({ errors, className, supportDetails }: ErrorSummary
           <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {supportDetails.summary}
           </summary>
-          <p className="mt-1 text-xs text-muted-foreground">{supportDetails.content}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {supportDetails.content}
+          </p>
         </details>
       ) : null}
     </div>

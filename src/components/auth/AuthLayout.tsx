@@ -27,10 +27,7 @@ export function AuthLayout({
         <main
           role="main"
           aria-labelledby="auth-layout-heading"
-          className={cn(
-            "mx-auto w-full max-w-md space-y-8",
-            className,
-          )}
+          className={cn("mx-auto w-full max-w-md space-y-8", className)}
         >
           <header className="space-y-2 text-center">
             <div className="mx-auto w-20 text-primary">

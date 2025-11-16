@@ -109,7 +109,11 @@ export const ERR_UNAUTHORIZED = "ERR_UNAUTHORIZED";
 // Dashboard-specific errors
 export class ActiveSimulationNotFoundError extends ApiError {
   constructor() {
-    super(404, "ERR_ACTIVE_SIMULATION_NOT_FOUND", "Active simulation required for dashboard");
+    super(
+      404,
+      "ERR_ACTIVE_SIMULATION_NOT_FOUND",
+      "Active simulation required for dashboard",
+    );
   }
 }
 

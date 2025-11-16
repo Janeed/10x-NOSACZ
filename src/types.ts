@@ -296,6 +296,7 @@ export interface ActiveSimulationDashboardDto extends SimulationDetailDto {
   currentMonthSchedule: {
     monthStart: Date;
     entries: Array<{
+      logId?: string;
       loanId: string;
       scheduledPayment: number;
       scheduledOverpayment: number;
@@ -406,6 +407,7 @@ export type ActiveSimulationSummary = Pick<
   | "projectedPayoffMonth"
   | "totalInterestSaved"
   | "status"
+  | "stale"
 > & {
   projectedPayoffMonth: SimulationRow["projected_payoff_month"];
   totalInterestSaved: SimulationRow["total_interest_saved"];
@@ -422,6 +424,7 @@ export interface DashboardOverviewLoanItem {
 }
 
 export interface DashboardOverviewCurrentMonthEntry {
+  logId?: MonthlyExecutionLogRow["id"];
   loanId: MonthlyExecutionLogRow["loan_id"];
   scheduledPayment: number;
   scheduledOverpayment: MonthlyExecutionLogRow["scheduled_overpayment_amount"];

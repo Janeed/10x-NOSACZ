@@ -10,7 +10,11 @@ import {
 import { errorResponse } from "../lib/http/responses.ts";
 import { logger } from "../lib/logger.ts";
 
-const PUBLIC_API_PATHS = new Set(["/api/auth/signin", "/api/auth/signup", "/api/auth/reset-password"]);
+const PUBLIC_API_PATHS = new Set([
+  "/api/auth/signin",
+  "/api/auth/signup",
+  "/api/auth/reset-password",
+]);
 
 const normalizePathname = (pathname: string): string => {
   if (pathname.length > 1 && pathname.endsWith("/")) {

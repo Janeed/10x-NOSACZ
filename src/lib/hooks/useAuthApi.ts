@@ -19,15 +19,15 @@ interface AuthApiSuccess {
   readonly session: SessionTokens;
 }
 
-type AuthApiResult = {
+interface AuthApiResult {
   readonly success: true;
   readonly data: AuthApiSuccess;
-};
+}
 
-type AuthApiErrorResult = {
+interface AuthApiErrorResult {
   readonly success: false;
   readonly error: AuthApiError;
-};
+}
 
 const JSON_HEADERS = {
   "Content-Type": "application/json",
@@ -49,20 +49,28 @@ const toSessionTokens = (payload: AuthSigninResponse): SessionTokens => {
 };
 
 const buildError = async (response: Response): Promise<AuthApiError> => {
-  const body = await parseJson<{ error?: { code?: string; message?: string }; requestId?: string }>(response);
-  const fallbackMessage = response.status >= 500
-    ? "Something went wrong. Please try again."
-    : "Unable to complete request.";
+  const body = await parseJson<{
+    error?: { code?: string; message?: string };
+    requestId?: string;
+  }>(response);
+  const fallbackMessage =
+    response.status >= 500
+      ? "Something went wrong. Please try again."
+      : "Unable to complete request.";
 
   return {
     code: body?.error?.code ?? "UNKNOWN_ERROR",
     message: body?.error?.message ?? fallbackMessage,
-    requestId: body?.requestId ?? response.headers.get("X-Request-Id") ?? undefined,
+    requestId:
+      body?.requestId ?? response.headers.get("X-Request-Id") ?? undefined,
     status: response.status,
   };
 };
 
-const post = async <Req, Res>(endpoint: string, payload: Req): Promise<AuthApiResult | AuthApiErrorResult> => {
+const post = async <Req, Res>(
+  endpoint: string,
+  payload: Req,
+): Promise<AuthApiResult | AuthApiErrorResult> => {
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -86,7 +94,7 @@ const post = async <Req, Res>(endpoint: string, payload: Req): Promise<AuthApiRe
       success: false,
       error: await buildError(response),
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
@@ -104,11 +112,17 @@ const post = async <Req, Res>(endpoint: string, payload: Req): Promise<AuthApiRe
  */
 export function useAuthApi() {
   const signin = useCallback(async (payload: AuthSigninRequest) => {
-    return post<AuthSigninRequest, AuthSigninResponse>("/api/auth/signin", payload);
+    return post<AuthSigninRequest, AuthSigninResponse>(
+      "/api/auth/signin",
+      payload,
+    );
   }, []);
 
   const signup = useCallback(async (payload: AuthSignupRequest) => {
-    return post<AuthSignupRequest, AuthSignupResponse>("/api/auth/signup", payload);
+    return post<AuthSignupRequest, AuthSignupResponse>(
+      "/api/auth/signup",
+      payload,
+    );
   }, []);
 
   return { signin, signup } as const;

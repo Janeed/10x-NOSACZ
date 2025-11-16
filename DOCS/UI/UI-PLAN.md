@@ -44,7 +44,7 @@
   - API endpoints: `POST /api/auth/reset-password`.
   - PRD stories: US-039.
 
-- Dashboard (Active Simulation)
+- Dashboard (Active Simulation) (done)
   - Path: `/dashboard` (default after sign-in)
   - Main purpose: Present active simulation summary, per-loan metrics, current month actions, and graphs.
   - Key information:

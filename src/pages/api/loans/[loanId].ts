@@ -21,7 +21,11 @@ import {
   validatePatchLoan,
   validateUpdateLoan,
 } from "../../../lib/validation/loan.ts";
-import type { LoanDto, PatchLoanCommand, UpdateLoanCommand } from "../../../types.ts";
+import type {
+  LoanDto,
+  PatchLoanCommand,
+  UpdateLoanCommand,
+} from "../../../types.ts";
 
 const resolveRequestId = (
   localsRequestId: string | undefined,
@@ -74,9 +78,7 @@ const ensureIfMatch = (request: Request): string => {
 };
 
 const ensureDeleteConfirmation = (request: Request): void => {
-  const confirmation = request.headers
-    .get("x-client-confirmation")
-    ?.trim();
+  const confirmation = request.headers.get("x-client-confirmation")?.trim();
   if (!confirmation) {
     throw validationError(
       "LOAN_DELETE_CONFIRMATION_REQUIRED",
@@ -209,7 +211,13 @@ export const PUT: APIRoute = async ({ locals, params, request }) => {
       staleSimulation: result.staleSimulation,
     });
 
-    return respondWithLoan(result.loan, 200, requestId, result.etag, result.staleSimulation);
+    return respondWithLoan(
+      result.loan,
+      200,
+      requestId,
+      result.etag,
+      result.staleSimulation,
+    );
   } catch (error) {
     return handleError(error, requestId, locals.userId, "loans.put.failure", {
       loanId,
@@ -235,7 +243,11 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
       throw validationError("INVALID_JSON", "Request body must be valid JSON");
     }
 
-    const { loan: existingLoan } = await getLoan(locals.supabase, userId, loanId);
+    const { loan: existingLoan } = await getLoan(
+      locals.supabase,
+      userId,
+      loanId,
+    );
 
     const validationResult = validatePatchLoan(payload, existingLoan);
     if (!validationResult.value) {
@@ -260,7 +272,13 @@ export const PATCH: APIRoute = async ({ locals, params, request }) => {
       staleSimulation: result.staleSimulation,
     });
 
-    return respondWithLoan(result.loan, 200, requestId, result.etag, result.staleSimulation);
+    return respondWithLoan(
+      result.loan,
+      200,
+      requestId,
+      result.etag,
+      result.staleSimulation,
+    );
   } catch (error) {
     return handleError(error, requestId, locals.userId, "loans.patch.failure", {
       loanId,
@@ -297,8 +315,14 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
 
     return new Response(null, { status: 204, headers });
   } catch (error) {
-    return handleError(error, requestId, locals.userId, "loans.delete.failure", {
-      loanId,
-    });
+    return handleError(
+      error,
+      requestId,
+      locals.userId,
+      "loans.delete.failure",
+      {
+        loanId,
+      },
+    );
   }
 };

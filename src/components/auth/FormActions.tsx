@@ -30,7 +30,7 @@ export function FormActions({
   const buttonLabel = isSubmitting
     ? "Processing..."
     : isDisabled
-      ? disabledLabel ?? submitLabel
+      ? (disabledLabel ?? submitLabel)
       : submitLabel;
 
   return (
@@ -45,7 +45,10 @@ export function FormActions({
       </Button>
 
       {secondaryLinks.length > 0 ? (
-        <nav aria-label="Secondary actions" className="flex flex-wrap justify-center gap-4 text-sm">
+        <nav
+          aria-label="Secondary actions"
+          className="flex flex-wrap justify-center gap-4 text-sm"
+        >
           {secondaryLinks.map((link) => (
             <a
               key={`${link.href}-${link.label}`}

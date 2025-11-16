@@ -31,7 +31,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     const confirmation = request.headers.get("X-Client-Confirmation");
     if (!confirmation) {
       return errorResponse(
-        validationError("CONFIRMATION_HEADER_REQUIRED", "X-Client-Confirmation header required"),
+        validationError(
+          "CONFIRMATION_HEADER_REQUIRED",
+          "X-Client-Confirmation header required",
+        ),
         requestId,
       );
     }
@@ -47,7 +50,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     const simulationId = idValidation.data;
 
     // Call service
-    const result: SimulationCancelResponse = await cancelSimulation(supabase, userId, simulationId);
+    const result: SimulationCancelResponse = await cancelSimulation(
+      supabase,
+      userId,
+      simulationId,
+    );
 
     logger.info(EVENT_CANCEL, "Simulation cancelled", {
       userId: hashUserId(userId),

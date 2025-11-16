@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-const simulationStatusEnum = z.enum(["running", "active", "completed", "stale", "cancelled"]);
+const simulationStatusEnum = z.enum([
+  "running",
+  "active",
+  "completed",
+  "stale",
+  "cancelled",
+]);
 const goalTypeEnum = z.enum(["fastest_payoff", "payment_reduction"]);
 
 const paginationSchema = z.object({
@@ -8,13 +14,18 @@ const paginationSchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(20),
 });
 
-export const simulationListQuerySchema = paginationSchema.extend({
-  status: simulationStatusEnum.optional(),
-  isActive: z.coerce.boolean().optional(),
-  stale: z.coerce.boolean().optional(),
-  sort: z.enum(["created_at", "completed_at"]).optional().default("created_at"),
-  order: z.enum(["asc", "desc"]).optional().default("desc"),
-}).strict();
+export const simulationListQuerySchema = paginationSchema
+  .extend({
+    status: simulationStatusEnum.optional(),
+    isActive: z.coerce.boolean().optional(),
+    stale: z.coerce.boolean().optional(),
+    sort: z
+      .enum(["created_at", "completed_at"])
+      .optional()
+      .default("created_at"),
+    order: z.enum(["asc", "desc"]).optional().default("desc"),
+  })
+  .strict();
 
 const strategyEnum = z.enum(["avalanche", "snowball", "equal", "ratio"]);
 
@@ -28,7 +39,10 @@ export const createSimulationSchema = z
     notes: z.string().trim().max(500).optional(),
   })
   .superRefine((val, ctx) => {
-    if (val.goal === "payment_reduction" && val.paymentReductionTarget == null) {
+    if (
+      val.goal === "payment_reduction" &&
+      val.paymentReductionTarget == null
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "paymentReductionTarget required for payment_reduction goal",
@@ -50,7 +64,9 @@ export const includeParamSchema = z
   );
 
 export type SimulationListQuerySchema = typeof simulationListQuerySchema;
-export type SimulationListQueryParsed = z.infer<typeof simulationListQuerySchema>;
+export type SimulationListQueryParsed = z.infer<
+  typeof simulationListQuerySchema
+>;
 
 export type CreateSimulationSchema = typeof createSimulationSchema;
 export type CreateSimulationParsed = z.infer<typeof createSimulationSchema>;

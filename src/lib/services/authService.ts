@@ -9,7 +9,11 @@ import {
   tooManyRequestsError,
   validationError,
 } from "../errors.ts";
-import type { AuthSigninParsed, AuthSignupParsed, AuthResetPasswordParsed } from "../validation/auth.ts";
+import type {
+  AuthSigninParsed,
+  AuthSignupParsed,
+  AuthResetPasswordParsed,
+} from "../validation/auth.ts";
 
 export interface SignUpResult {
   userId: string;
@@ -257,11 +261,7 @@ export async function signOut(
       }
 
       if (error.status >= 400 && error.status < 500) {
-        throw unauthorizedError(
-          "INVALID_SESSION",
-          "Invalid session",
-          details,
-        );
+        throw unauthorizedError("INVALID_SESSION", "Invalid session", details);
       }
     }
 
@@ -284,15 +284,21 @@ export async function resetPassword(
   }
 
   // Get redirect URL from env, fallback to origin
-  const redirectTo = process.env.PUBLIC_RESET_PASSWORD_REDIRECT_URL || "https://nosacz.com/reset-password";
+  const redirectTo =
+    process.env.PUBLIC_RESET_PASSWORD_REDIRECT_URL ||
+    "https://nosacz.com/reset-password";
 
   let result;
   try {
     result = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   } catch (cause) {
-    throw internalError("SUPABASE_UNAVAILABLE", "Reset password service unavailable", {
-      cause,
-    });
+    throw internalError(
+      "SUPABASE_UNAVAILABLE",
+      "Reset password service unavailable",
+      {
+        cause,
+      },
+    );
   }
 
   const { error } = result;
@@ -313,11 +319,7 @@ export async function resetPassword(
       }
 
       if (error.status === 404) {
-        throw notFoundError(
-          "EMAIL_NOT_FOUND",
-          "Email not found",
-          details,
-        );
+        throw notFoundError("EMAIL_NOT_FOUND", "Email not found", details);
       }
 
       if (error.status >= 400 && error.status < 500) {

@@ -46,7 +46,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
     return (
       <div className={cn("space-y-1", className)}>
-        <label htmlFor={id} className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor={id}
+          className="block text-sm font-medium text-foreground"
+        >
           {label}
         </label>
         <div className="relative">

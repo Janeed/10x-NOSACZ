@@ -7,10 +7,7 @@ import {
   toApiError,
 } from "../../lib/http/responses.ts";
 import { logger } from "../../lib/logger.ts";
-import {
-  createLoan,
-  listLoans,
-} from "../../lib/services/loanService.ts";
+import { createLoan, listLoans } from "../../lib/services/loanService.ts";
 import {
   validateCreateLoan,
   validateListQuery,
@@ -76,7 +73,10 @@ export const GET: APIRoute = async ({ locals, request }) => {
     const parsedQuery = parseListQuery(request);
     const validatedQuery = validateListQuery(parsedQuery);
     if (!validatedQuery.value) {
-      throwLoanValidationError("Invalid loan list query", validatedQuery.errors);
+      throwLoanValidationError(
+        "Invalid loan list query",
+        validatedQuery.errors,
+      );
     }
 
     const query = validatedQuery.value as LoanListQuery;

@@ -17,9 +17,12 @@ import {
 import { logger } from "../logger";
 import { invalidateDashboardCache } from "./dashboardService";
 
-type MonthlyExecutionLogRow = Database["public"]["Tables"]["monthly_execution_logs"]["Row"];
-type MonthlyExecutionLogInsert = Database["public"]["Tables"]["monthly_execution_logs"]["Insert"];
-type MonthlyExecutionLogUpdate = Database["public"]["Tables"]["monthly_execution_logs"]["Update"];
+type MonthlyExecutionLogRow =
+  Database["public"]["Tables"]["monthly_execution_logs"]["Row"];
+type MonthlyExecutionLogInsert =
+  Database["public"]["Tables"]["monthly_execution_logs"]["Insert"];
+type MonthlyExecutionLogUpdate =
+  Database["public"]["Tables"]["monthly_execution_logs"]["Update"];
 
 const SELECT_COLUMNS = `
   id,
@@ -63,7 +66,7 @@ const normalizeMonthStart = (monthStart: string): string => {
   const date = new Date(monthStart);
   date.setUTCDate(1);
   date.setUTCHours(0, 0, 0, 0);
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split("T")[0];
 };
 
 const trimReason = (reasonCode: string | undefined): string | null => {
@@ -90,12 +93,26 @@ const validateStatusTransition = (
     backfilled: [],
   };
 
-  if (incomingPaymentStatus && !paymentTransitions[currentPaymentStatus]?.includes(incomingPaymentStatus)) {
-    throw validationError("ERR_INVALID_STATUS_TRANSITION", `Invalid payment status transition from ${currentPaymentStatus} to ${incomingPaymentStatus}`);
+  if (
+    incomingPaymentStatus &&
+    !paymentTransitions[currentPaymentStatus]?.includes(incomingPaymentStatus)
+  ) {
+    throw validationError(
+      "ERR_INVALID_STATUS_TRANSITION",
+      `Invalid payment status transition from ${currentPaymentStatus} to ${incomingPaymentStatus}`,
+    );
   }
 
-  if (incomingOverpaymentStatus && !overpaymentTransitions[currentOverpaymentStatus]?.includes(incomingOverpaymentStatus)) {
-    throw validationError("ERR_INVALID_STATUS_TRANSITION", `Invalid overpayment status transition from ${currentOverpaymentStatus} to ${incomingOverpaymentStatus}`);
+  if (
+    incomingOverpaymentStatus &&
+    !overpaymentTransitions[currentOverpaymentStatus]?.includes(
+      incomingOverpaymentStatus,
+    )
+  ) {
+    throw validationError(
+      "ERR_INVALID_STATUS_TRANSITION",
+      `Invalid overpayment status transition from ${currentOverpaymentStatus} to ${incomingOverpaymentStatus}`,
+    );
   }
 };
 
@@ -115,7 +132,11 @@ const markActiveSimulationStale = async (
     .neq("stale", true);
 
   if (error) {
-    logger.error("mark_simulations_stale", "Failed to mark active simulations as stale", { userId, error: error.message });
+    logger.error(
+      "mark_simulations_stale",
+      "Failed to mark active simulations as stale",
+      { userId, error: error.message },
+    );
     throw internalError("ERR_INTERNAL", "Failed to update simulations");
   }
 };
@@ -163,7 +184,10 @@ export const listLogs = async (
   const { data, error, count } = await dbQuery;
 
   if (error) {
-    logger.error("list_logs", "Failed to list monthly execution logs", { userId, error: error.message });
+    logger.error("list_logs", "Failed to list monthly execution logs", {
+      userId,
+      error: error.message,
+    });
     throw internalError("ERR_INTERNAL", "Failed to retrieve logs");
   }
 
@@ -195,12 +219,20 @@ export const createLog = async (
     .single();
 
   if (loanError || !loan) {
-    logger.warn("create_log", "Loan not found or not owned", { userId, loanId: cmd.loanId, requestId });
+    logger.warn("create_log", "Loan not found or not owned", {
+      userId,
+      loanId: cmd.loanId,
+      requestId,
+    });
     throw notFoundError("ERR_NOT_FOUND", "Loan not found");
   }
 
   if (loan.is_closed) {
-    logger.warn("create_log", "Attempt to create log for closed loan", { userId, loanId: cmd.loanId, requestId });
+    logger.warn("create_log", "Attempt to create log for closed loan", {
+      userId,
+      loanId: cmd.loanId,
+      requestId,
+    });
     throw conflictError("ERR_CLOSED_LOAN", "Cannot create log for closed loan");
   }
 
@@ -217,7 +249,7 @@ export const createLog = async (
     interest_portion: cmd.interestPortion,
     principal_portion: cmd.principalPortion,
     remaining_balance_after: cmd.remainingBalanceAfter,
-    reason_code: trimReason(cmd.reasonCode!) as any,
+    reason_code: trimReason(cmd.reasonCode ?? undefined),
   };
 
   const { data, error } = await supabase
@@ -227,20 +259,40 @@ export const createLog = async (
     .single();
 
   if (error) {
-    if (error.code === "23505") { // unique constraint violation
-      logger.warn("create_log", "Duplicate monthly execution log", { userId, loanId: cmd.loanId, monthStart: normalizedMonthStart, requestId });
-      throw conflictError("ERR_UNIQUE_CONSTRAINT", "Log already exists for this loan and month");
+    if (error.code === "23505") {
+      // unique constraint violation
+      logger.warn("create_log", "Duplicate monthly execution log", {
+        userId,
+        loanId: cmd.loanId,
+        monthStart: normalizedMonthStart,
+        requestId,
+      });
+      throw conflictError(
+        "ERR_UNIQUE_CONSTRAINT",
+        "Log already exists for this loan and month",
+      );
     }
-    logger.error("create_log", "Failed to create monthly execution log", { userId, error: error.message, requestId });
+    logger.error("create_log", "Failed to create monthly execution log", {
+      userId,
+      error: error.message,
+      requestId,
+    });
     throw internalError("ERR_INTERNAL", "Failed to create log");
   }
 
   // Mark simulations stale if overpayment is backfilled or skipped
-  if (cmd.overpaymentStatus === "backfilled" || cmd.overpaymentStatus === "skipped") {
+  if (
+    cmd.overpaymentStatus === "backfilled" ||
+    cmd.overpaymentStatus === "skipped"
+  ) {
     await markActiveSimulationStale(userId, supabase);
   }
 
-  logger.info("create_log", "Monthly execution log created", { userId, logId: data.id, requestId });
+  logger.info("create_log", "Monthly execution log created", {
+    userId,
+    logId: data.id,
+    requestId,
+  });
 
   // Invalidate dashboard cache since execution log data changed
   invalidateDashboardCache(userId);
@@ -264,7 +316,11 @@ export const patchLog = async (
     .single();
 
   if (fetchError || !existing) {
-    logger.warn("patch_log", "Monthly execution log not found", { userId, logId, requestId });
+    logger.warn("patch_log", "Monthly execution log not found", {
+      userId,
+      logId,
+      requestId,
+    });
     throw notFoundError("ERR_NOT_FOUND", "Log not found");
   }
 
@@ -277,12 +333,21 @@ export const patchLog = async (
     .single();
 
   if (loanError || !loan) {
-    logger.warn("patch_log", "Loan not found for log", { userId, logId, loanId: existing.loan_id, requestId });
+    logger.warn("patch_log", "Loan not found for log", {
+      userId,
+      logId,
+      loanId: existing.loan_id,
+      requestId,
+    });
     throw notFoundError("ERR_NOT_FOUND", "Loan not found");
   }
 
   if (loan.is_closed) {
-    logger.warn("patch_log", "Attempt to patch log for closed loan", { userId, logId, requestId });
+    logger.warn("patch_log", "Attempt to patch log for closed loan", {
+      userId,
+      logId,
+      requestId,
+    });
     throw conflictError("ERR_CLOSED_LOAN", "Cannot modify log for closed loan");
   }
 
@@ -300,22 +365,30 @@ export const patchLog = async (
   if (cmd.paymentStatus) {
     updateData.payment_status = cmd.paymentStatus;
     if (cmd.paymentStatus === "paid" || cmd.paymentStatus === "backfilled") {
-      updateData.payment_executed_at = cmd.paymentExecutedAt || new Date().toISOString();
+      updateData.payment_executed_at =
+        cmd.paymentExecutedAt || new Date().toISOString();
     }
   }
 
   if (cmd.overpaymentStatus) {
     updateData.overpayment_status = cmd.overpaymentStatus;
-    if (cmd.overpaymentStatus === "executed" || cmd.overpaymentStatus === "backfilled") {
-      updateData.overpayment_executed_at = cmd.overpaymentExecutedAt || new Date().toISOString();
+    if (
+      cmd.overpaymentStatus === "executed" ||
+      cmd.overpaymentStatus === "backfilled"
+    ) {
+      updateData.overpayment_executed_at =
+        cmd.overpaymentExecutedAt || new Date().toISOString();
     }
     if (requiresReason(cmd.overpaymentStatus) && !cmd.reasonCode) {
-      throw validationError("ERR_VALIDATION", "reasonCode is required for this status change");
+      throw validationError(
+        "ERR_VALIDATION",
+        "reasonCode is required for this status change",
+      );
     }
   }
 
   if (cmd.reasonCode !== undefined) {
-    updateData.reason_code = trimReason(cmd.reasonCode!) as any;
+    updateData.reason_code = trimReason(cmd.reasonCode ?? undefined);
   }
 
   if (cmd.actualOverpaymentAmount !== undefined) {
@@ -339,18 +412,31 @@ export const patchLog = async (
     .single();
 
   if (error) {
-    logger.error("patch_log", "Failed to patch monthly execution log", { userId, logId, error: error.message, requestId });
+    logger.error("patch_log", "Failed to patch monthly execution log", {
+      userId,
+      logId,
+      error: error.message,
+      requestId,
+    });
     throw internalError("ERR_INTERNAL", "Failed to update log");
   }
 
   // Mark simulations stale if overpayment transitioned to skipped or backfilled
   let staleSimulation = false;
-  if (cmd.overpaymentStatus === "skipped" || cmd.overpaymentStatus === "backfilled") {
+  if (
+    cmd.overpaymentStatus === "skipped" ||
+    cmd.overpaymentStatus === "backfilled"
+  ) {
     await markActiveSimulationStale(userId, supabase);
     staleSimulation = true;
   }
 
-  logger.info("patch_log", "Monthly execution log patched", { userId, logId, requestId, staleSimulation });
+  logger.info("patch_log", "Monthly execution log patched", {
+    userId,
+    logId,
+    requestId,
+    staleSimulation,
+  });
 
   // Invalidate dashboard cache since execution log data changed
   invalidateDashboardCache(userId);

@@ -4,9 +4,18 @@ import { createHash } from "node:crypto";
 import { unauthorizedError } from "../../../lib/errors.ts";
 import { errorResponse, ok } from "../../../lib/http/responses.ts";
 import { logger } from "../../../lib/logger.ts";
-import { listSimulations, queueSimulation } from "../../../lib/services/simulationService.ts";
-import { simulationListQuerySchema, createSimulationSchema } from "../../../lib/validation/simulation.ts";
-import type { SimulationListResponse, SimulationQueuedResponse } from "../../../types.ts";
+import {
+  listSimulations,
+  queueSimulation,
+} from "../../../lib/services/simulationService.ts";
+import {
+  simulationListQuerySchema,
+  createSimulationSchema,
+} from "../../../lib/validation/simulation.ts";
+import type {
+  SimulationListResponse,
+  SimulationQueuedResponse,
+} from "../../../types.ts";
 
 const EVENT_LIST = "simulations.list";
 const EVENT_QUEUE = "simulations.queue";
@@ -48,7 +57,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const query = queryValidation.data;
 
     // Call service
-    const result: SimulationListResponse = await listSimulations(supabase, userId, query);
+    const result: SimulationListResponse = await listSimulations(
+      supabase,
+      userId,
+      query,
+    );
 
     logger.info(EVENT_LIST, "Simulations listed", {
       userId: hashUserId(userId),
@@ -89,7 +102,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const cmd = bodyValidation.data;
 
     // Call service
-    const result: SimulationQueuedResponse = await queueSimulation(supabase, userId, cmd);
+    const result: SimulationQueuedResponse = await queueSimulation(
+      supabase,
+      userId,
+      cmd,
+    );
 
     logger.info(EVENT_QUEUE, "Simulation queued", {
       userId: hashUserId(userId),

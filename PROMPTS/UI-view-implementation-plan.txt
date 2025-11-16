@@ -130,4 +130,4 @@ Here's an example of what the output file should look like (content is to be rep
 3. [...]
 ```
 
-Begin analysis and planning now. Your final output should consist solely of the implementation plan in English in markdown format, which you will save in the .ai/{view-name}-view-implementation-plan.md file and should not duplicate or repeat any work done in the implementation breakdown.
+Begin analysis and planning now. Your final output should consist solely of the implementation plan in English in markdown format, which you will save in the DOCS/plans/UI/{view-name}-view-implementation-plan.md file and should not duplicate or repeat any work done in the implementation breakdown.
