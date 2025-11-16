@@ -455,14 +455,14 @@ Acceptance Criteria:
 
 ### Authentication and Access Control
 
-US-036 Register Account
+US-036 (done) Register Account
 Description: As a new user I create an account to manage loans securely.
 Acceptance Criteria:
 
 - Email uniqueness enforced.
 - No password complexity requrement
 
-US-037 Login
+US-037 (done) Login
 Description: As a user I log in with credentials.
 Acceptance Criteria:
 

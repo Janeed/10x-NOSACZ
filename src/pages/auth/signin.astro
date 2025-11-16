@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AuthView } from "@/components/auth/AuthView";
+---
+
+<Layout title="Sign in">
+  <AuthView
+    mode="signin"
+    title="Sign in"
+    subtitle="Welcome back. Enter your details to access your dashboard."
+    client:load
+  />
+</Layout>

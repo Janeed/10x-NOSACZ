@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AuthView } from "@/components/auth/AuthView";
+---
+
+<Layout title="Create your account">
+  <AuthView
+    mode="signup"
+    title="Create your account"
+    subtitle="Join NOSACZ to optimize your loan overpayments."
+    client:load
+  />
+</Layout>
