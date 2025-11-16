@@ -62,7 +62,7 @@
   - API endpoints: `GET /api/dashboard/overview`, `GET /api/simulations/active`, `PATCH /api/monthly-execution-logs/{logId}`.
   - PRD stories: US-023, US-024, US-029, US-030, US-031, US-032, US-033, US-034, US-035, US-027, US-028.
 
-- Wizard (Run Simulation)
+- Wizard (Run Simulation) (done)
   - Path: `/wizard` (guarded: visible only when there is no active simulation)
   - Main purpose: Guide user to select strategy and goal/parameters, then run a new simulation.
   - Key information:

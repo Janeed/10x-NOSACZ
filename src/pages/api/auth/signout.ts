@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 
 import { internalError, validationError } from "../../../lib/errors.ts";
 import { errorResponse, toApiError } from "../../../lib/http/responses.ts";
+import { buildSessionClearCookies } from "../../../lib/http/sessionCookies.ts";
 import { logger } from "../../../lib/logger.ts";
 import { signOut } from "../../../lib/services/authService.ts";
 
@@ -31,6 +32,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await signOut(supabase);
 
+    const clearCookies = buildSessionClearCookies();
+    const headers: Array<[string, string]> = [["X-Request-Id", requestId]];
+    clearCookies.forEach((cookie) => {
+      headers.push(["Set-Cookie", cookie]);
+    });
+
     logger.info(EVENT, "Signout succeeded", {
       requestId,
       latencyMs: Math.round(performance.now() - startedAt),
@@ -38,9 +45,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return new Response(null, {
       status: 204,
-      headers: {
-        "X-Request-Id": requestId,
-      },
+      headers,
     });
   } catch (error) {
     const apiError = toApiError(error);

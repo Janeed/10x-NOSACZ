@@ -7,6 +7,7 @@ import {
   jsonResponse,
   toApiError,
 } from "../../../lib/http/responses.ts";
+import { buildSessionCookies } from "../../../lib/http/sessionCookies.ts";
 import { logger } from "../../../lib/logger.ts";
 import { signUp } from "../../../lib/services/authService.ts";
 import { authSignupSchema } from "../../../lib/validation/auth.ts";
@@ -109,6 +110,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       },
     };
 
+    const sessionCookies = buildSessionCookies({
+      accessToken: signupResult.accessToken,
+      refreshToken: signupResult.refreshToken,
+    });
+
+    const headers: Array<[string, string]> = [
+      ["Cache-Control", "no-store"],
+      ["X-Request-Id", requestId],
+    ];
+
+    sessionCookies.forEach((cookie) => {
+      headers.push(["Set-Cookie", cookie]);
+    });
+
     logger.info(EVENT, "Signup succeeded", {
       requestId,
       emailHash: hashedEmail,
@@ -117,10 +132,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return jsonResponse(response, {
       status: 201,
-      headers: {
-        "Cache-Control": "no-store",
-        "X-Request-Id": requestId,
-      },
+      headers,
     });
   } catch (error) {
     const apiError = toApiError(error);

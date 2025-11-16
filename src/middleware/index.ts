@@ -8,6 +8,7 @@ import {
   unauthorizedError,
 } from "../lib/errors.ts";
 import { errorResponse } from "../lib/http/responses.ts";
+import { readAccessTokenFromCookies } from "../lib/http/sessionCookies.ts";
 import { logger } from "../lib/logger.ts";
 
 const PUBLIC_API_PATHS = new Set([
@@ -62,7 +63,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   context.locals.requestId = requestId;
 
-  const accessToken = extractBearerToken(request.headers.get("authorization"));
+  const cookieHeader = request.headers.get("cookie");
+  const accessToken =
+    extractBearerToken(request.headers.get("authorization")) ??
+    readAccessTokenFromCookies(cookieHeader);
   const supabase = createSupabaseClient(accessToken);
   context.locals.supabase = supabase;
 

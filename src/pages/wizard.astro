@@ -1,0 +1,42 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { WizardPage } from "@/components/wizard/WizardPage";
+import { getActiveSimulationDashboard } from "@/lib/services/simulationService";
+import { isApiError } from "@/lib/errors";
+
+const { supabase, userId } = Astro.locals;
+const currentPath = Astro.url.pathname || "/wizard";
+const loginRedirect = `/auth/signin?redirect=${encodeURIComponent(currentPath)}`;
+
+if (!userId || !supabase) {
+  return Astro.redirect(loginRedirect);
+}
+
+let hasActiveSimulation = false;
+
+try {
+  await getActiveSimulationDashboard(supabase, userId);
+  hasActiveSimulation = true;
+} catch (error) {
+  if (isApiError(error)) {
+    if (error.status === 401) {
+      return Astro.redirect(loginRedirect);
+    }
+
+    if (
+      error.code === "ACTIVE_NOT_FOUND" ||
+      error.code === "ACTIVE_SIMULATION_STALE"
+    ) {
+      hasActiveSimulation = false;
+    }
+  }
+}
+
+if (hasActiveSimulation) {
+  return Astro.redirect("/dashboard");
+}
+---
+
+<Layout title="Run Simulation">
+  <WizardPage client:load />
+</Layout>
