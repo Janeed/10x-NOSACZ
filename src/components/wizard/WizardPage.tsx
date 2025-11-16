@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { GoalSelector } from "@/components/wizard/GoalSelector";
@@ -286,6 +292,71 @@ export function WizardPage() {
     wizardErrors.strategy,
     wizardErrors.threshold,
     wizardState.canSubmit,
+  ]);
+
+  useEffect(() => {
+    if (currentStep !== "strategy") {
+      return;
+    }
+
+    if (!wizardState.selectedStrategyId) {
+      return;
+    }
+
+    if (wizardErrors.loans) {
+      return;
+    }
+
+    if (!canGoToStep("goal")) {
+      return;
+    }
+
+    goToStep("goal");
+  }, [
+    canGoToStep,
+    currentStep,
+    goToStep,
+    wizardErrors.loans,
+    wizardState.selectedStrategyId,
+  ]);
+
+  useEffect(() => {
+    if (currentStep !== "goal") {
+      return;
+    }
+
+    if (!wizardState.goal) {
+      return;
+    }
+
+    if (thresholdServerError) {
+      return;
+    }
+
+    const requiresThreshold = wizardState.goal === "payment_reduction";
+    if (requiresThreshold) {
+      if (!thresholdField.valid) {
+        return;
+      }
+
+      if (!thresholdField.touched) {
+        return;
+      }
+    }
+
+    if (!canGoToStep("review")) {
+      return;
+    }
+
+    goToStep("review");
+  }, [
+    canGoToStep,
+    currentStep,
+    goToStep,
+    thresholdField.touched,
+    thresholdField.valid,
+    thresholdServerError,
+    wizardState.goal,
   ]);
 
   const renderStepContent = () => {

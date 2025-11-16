@@ -1,39 +1,78 @@
-import { z } from "zod";
-import { InvalidIncludeError } from "../errors";
+import { InvalidIncludeError } from "../errors.ts";
 
-const ALLOWED_INCLUDE_TOKENS = ["interestBreakdown", "monthlyTrend"] as const;
+export interface DashboardIncludeOptions {
+  monthlyTrend: boolean;
+  interestBreakdown: boolean;
+  adherence: boolean;
+}
 
-const includeSchema = z
-  .string()
-  .optional()
-  .transform((val) => {
-    if (!val) return [];
-    const tokens = val
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const invalidTokens = tokens.filter(
-      (t) =>
-        !ALLOWED_INCLUDE_TOKENS.includes(
-          t as (typeof ALLOWED_INCLUDE_TOKENS)[number],
-        ),
-    );
-    if (invalidTokens.length > 0) {
-      throw new InvalidIncludeError(
-        `Invalid include parameter: ${invalidTokens.join(", ")}. Allowed values: ${ALLOWED_INCLUDE_TOKENS.join(", ")}`,
-      );
-    }
-    return tokens as string[];
-  });
+const TOKEN_TO_FLAGS: Record<string, (keyof DashboardIncludeOptions)[]> = {
+  graphs: ["monthlyTrend", "interestBreakdown"],
+  adherence: ["adherence"],
+  monthlyTrend: ["monthlyTrend"],
+  interestBreakdown: ["interestBreakdown"],
+};
 
-export const parseInclude = (query: string | undefined): string[] => {
-  try {
-    const includes = includeSchema.parse(query);
-    return includes;
-  } catch (error) {
-    if (error instanceof InvalidIncludeError) {
-      throw error;
-    }
-    throw new InvalidIncludeError("Invalid include parameter format");
+const ALLOWED_INCLUDE_TOKENS = Object.keys(TOKEN_TO_FLAGS);
+
+const DEFAULT_INCLUDE_WITH_PARAM: DashboardIncludeOptions = {
+  monthlyTrend: false,
+  interestBreakdown: false,
+  adherence: false,
+};
+
+const DEFAULT_INCLUDE_NO_PARAM: DashboardIncludeOptions = {
+  monthlyTrend: false,
+  interestBreakdown: false,
+  adherence: true,
+};
+
+const setFlag = (
+  target: DashboardIncludeOptions,
+  flag: keyof DashboardIncludeOptions,
+) => {
+  target[flag] = true;
+};
+
+export const parseInclude = (
+  query: string | undefined,
+): DashboardIncludeOptions => {
+  if (!query) {
+    return { ...DEFAULT_INCLUDE_NO_PARAM };
   }
+
+  const tokens = query
+    .split(",")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+
+  if (tokens.length === 0) {
+    return { ...DEFAULT_INCLUDE_NO_PARAM };
+  }
+
+  const include: DashboardIncludeOptions = {
+    ...DEFAULT_INCLUDE_WITH_PARAM,
+  };
+
+  const invalidTokens: string[] = [];
+
+  for (const token of tokens) {
+    const flags = TOKEN_TO_FLAGS[token];
+    if (!flags) {
+      invalidTokens.push(token);
+      continue;
+    }
+
+    for (const flag of flags) {
+      setFlag(include, flag);
+    }
+  }
+
+  if (invalidTokens.length > 0) {
+    throw new InvalidIncludeError(
+      `Invalid include parameter: ${invalidTokens.join(", ")}. Allowed values: ${ALLOWED_INCLUDE_TOKENS.join(", ")}`,
+    );
+  }
+
+  return include;
 };

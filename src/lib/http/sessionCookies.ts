@@ -96,17 +96,9 @@ export const buildSessionCookies = (
 };
 
 export const buildSessionClearCookies = (): readonly string[] => {
-  const accessCookie = serializeCookie(
-    SESSION_ACCESS_TOKEN_COOKIE,
-    "",
-    0,
-  );
+  const accessCookie = serializeCookie(SESSION_ACCESS_TOKEN_COOKIE, "", 0);
 
-  const refreshCookie = serializeCookie(
-    SESSION_REFRESH_TOKEN_COOKIE,
-    "",
-    0,
-  );
+  const refreshCookie = serializeCookie(SESSION_REFRESH_TOKEN_COOKIE, "", 0);
 
   return [accessCookie, refreshCookie];
 };

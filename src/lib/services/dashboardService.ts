@@ -14,6 +14,7 @@ import {
   computeLoanMetrics,
   buildAdherenceMetrics,
 } from "./dashboardCalculationsService.ts";
+import type { DashboardIncludeOptions } from "../validation/dashboard.ts";
 
 const CACHE_TTL_MS = 300_000; // 5 minutes
 
@@ -24,8 +25,25 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
-const makeCacheKey = (userId: string, include: string[]): string => {
-  return `${userId}|${include.sort().join(",")}`;
+const makeCacheKey = (
+  userId: string,
+  include: DashboardIncludeOptions,
+): string => {
+  const flags: string[] = [];
+
+  if (include.monthlyTrend) {
+    flags.push("monthlyTrend");
+  }
+
+  if (include.interestBreakdown) {
+    flags.push("interestBreakdown");
+  }
+
+  if (include.adherence) {
+    flags.push("adherence");
+  }
+
+  return `${userId}|${flags.join(",")}`;
 };
 
 const assertSupabaseClient = (
@@ -59,7 +77,7 @@ const fetchActiveSimulation = async (
   const { data, error } = await supabase
     .from("simulations")
     .select(
-      "id, strategy, goal, projected_payoff_month, total_interest_saved, status",
+      "id, strategy, goal, projected_payoff_month, total_interest_saved, status, stale",
     )
     .eq("user_id", userId)
     .eq("is_active", true)
@@ -82,6 +100,7 @@ const fetchActiveSimulation = async (
     projectedPayoffMonth: data.projected_payoff_month,
     totalInterestSaved: data.total_interest_saved || 0,
     status: data.status,
+    stale: data.stale ?? false,
   };
 };
 
@@ -266,7 +285,7 @@ const fetchAdherence = async (
 export const getDashboardOverview = async (
   supabase: SupabaseClient<Database>,
   userId: string,
-  include: string[],
+  include: DashboardIncludeOptions,
   options?: { now?: Date },
 ): Promise<DashboardOverviewDto> => {
   const validatedUserId = assertUserId(userId);
@@ -296,34 +315,37 @@ export const getDashboardOverview = async (
   );
 
   let graphs: DashboardOverviewGraphData | undefined;
-  if (include.includes("monthlyTrend")) {
+  if (include.monthlyTrend) {
     graphs = {
       ...graphs,
       monthlyBalances: await fetchGraphMonthlyBalances(
         validatedSupabase,
         validatedUserId,
       ),
-    };
+    } satisfies DashboardOverviewGraphData;
   }
-  if (include.includes("interestBreakdown")) {
+
+  if (include.interestBreakdown) {
     graphs = {
       ...graphs,
       interestVsSaved: await fetchGraphInterestVsSaved(
         validatedSupabase,
         validatedUserId,
       ),
-    };
+    } satisfies DashboardOverviewGraphData;
   }
 
-  const adherence = await fetchAdherence(validatedSupabase, validatedUserId);
+  const adherence = include.adherence
+    ? await fetchAdherence(validatedSupabase, validatedUserId)
+    : undefined;
 
   const dto: DashboardOverviewDto = {
     activeSimulation,
     loans: loanMetrics,
     currentMonth,
-    graphs,
-    adherence,
-  };
+    ...(graphs ? { graphs } : {}),
+    ...(adherence ? { adherence } : {}),
+  } satisfies DashboardOverviewDto;
 
   cache.set(cacheKey, { dto, expiresAt: Date.now() + CACHE_TTL_MS });
 

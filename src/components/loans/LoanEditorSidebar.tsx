@@ -212,6 +212,9 @@ export const LoanEditorSidebar = ({
   const [errors, setErrors] = useState<LoanFormErrors>({});
   const [nonFieldError, setNonFieldError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [effectiveEtag, setEffectiveEtag] = useState<string | undefined>(
+    etag ?? undefined,
+  );
 
   useEffect(() => {
     if (!open) {
@@ -225,7 +228,47 @@ export const LoanEditorSidebar = ({
     }
     setErrors({});
     setNonFieldError(null);
-  }, [loan, mode, open]);
+    setEffectiveEtag(etag ?? undefined);
+  }, [etag, loan, mode, open]);
+
+  useEffect(() => {
+    if (!open || mode !== "edit" || !loan) {
+      return;
+    }
+
+    if (etag) {
+      setEffectiveEtag(etag);
+      return;
+    }
+
+    const controller = new AbortController();
+    void (async () => {
+      const result = await apiFetch<LoanDto>({
+        path: `/api/loans/${loan.id}`,
+        method: "GET",
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      if (!result.ok) {
+        setNonFieldError(result.error.message);
+        return;
+      }
+
+      if (result.data) {
+        setValues(mapLoanToValues(result.data));
+      }
+
+      setEffectiveEtag(result.meta?.etag ?? undefined);
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [apiFetch, etag, loan, mode, open]);
 
   const title = useMemo(() => {
     return mode === "create" ? "Add loan" : "Edit loan";
@@ -459,8 +502,8 @@ export const LoanEditorSidebar = ({
       if (mode === "edit" && loan) {
         path = `/api/loans/${loan.id}`;
         method = "PUT";
-        if (etag) {
-          headers["If-Match"] = etag;
+        if (effectiveEtag) {
+          headers["If-Match"] = effectiveEtag;
         }
       }
 
@@ -502,6 +545,8 @@ export const LoanEditorSidebar = ({
         etag: result.meta?.etag ?? undefined,
       };
 
+      setEffectiveEtag(result.meta?.etag ?? undefined);
+
       onSaved({
         loan: savedLoan,
         etag: result.meta?.etag ?? null,
@@ -515,7 +560,7 @@ export const LoanEditorSidebar = ({
       apiFetch,
       buildCommandPayload,
       clearErrors,
-      etag,
+  effectiveEtag,
       isSubmitting,
       loan,
       mode,

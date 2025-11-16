@@ -2,20 +2,24 @@ import type { APIRoute } from "astro";
 import {
   listStrategies,
   StrategyListSchema,
-} from "../../lib/services/strategyService";
+} from "../../lib/services/strategyService.ts";
 import {
   ok,
   unauthorized,
   internalErrorResponse,
-} from "../../lib/http/responses";
-import { logger } from "../../lib/logger";
+} from "../../lib/http/responses.ts";
+import { logger } from "../../lib/logger.ts";
 
 export const GET: APIRoute = async ({ locals }) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { user, requestId } = locals as { user?: any; requestId?: string };
+  const { userId, requestId } = locals as {
+    userId?: string;
+    requestId?: string;
+  };
 
-  if (!user) {
-    logger.warn("strategies-get", "Unauthorized access attempt", { requestId });
+  if (!userId) {
+    logger.warn("strategies-get", "Unauthorized access attempt", {
+      requestId,
+    });
     return unauthorized("Missing or invalid token", requestId);
   }
 

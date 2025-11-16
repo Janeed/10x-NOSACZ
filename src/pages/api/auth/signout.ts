@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     await signOut(supabase);
 
     const clearCookies = buildSessionClearCookies();
-    const headers: Array<[string, string]> = [["X-Request-Id", requestId]];
+    const headers: [string, string][] = [["X-Request-Id", requestId]];
     clearCookies.forEach((cookie) => {
       headers.push(["Set-Cookie", cookie]);
     });

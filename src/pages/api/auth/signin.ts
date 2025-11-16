@@ -115,7 +115,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       accessToken: signinResult.accessToken,
       refreshToken: signinResult.refreshToken,
     });
-    const headers: Array<[string, string]> = [
+    const headers: [string, string][] = [
       ["Cache-Control", "no-store"],
       ["X-Request-Id", requestId],
     ];

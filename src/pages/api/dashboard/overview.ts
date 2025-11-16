@@ -1,6 +1,9 @@
 import type { APIRoute } from "astro";
 
-import { ActiveSimulationNotFoundError } from "../../../lib/errors.ts";
+import {
+  ActiveSimulationNotFoundError,
+  InvalidIncludeError,
+} from "../../../lib/errors.ts";
 import { errorResponse, jsonResponse } from "../../../lib/http/responses.ts";
 import { logger } from "../../../lib/logger.ts";
 import { getDashboardOverview } from "../../../lib/services/dashboardService.ts";
@@ -20,6 +23,7 @@ const resolveRequestId = (
 
 export const GET: APIRoute = async ({ locals, request }) => {
   const requestId = resolveRequestId(locals.requestId, request);
+  let includeParam: string | null | undefined;
 
   try {
     const userId = locals.userId;
@@ -29,7 +33,7 @@ export const GET: APIRoute = async ({ locals, request }) => {
 
     // Parse include query parameter
     const url = new URL(request.url);
-    const includeParam = url.searchParams.get("include");
+    includeParam = url.searchParams.get("include");
     const include = parseInclude(includeParam ?? undefined);
 
     const dashboardOverview = await getDashboardOverview(
@@ -40,8 +44,17 @@ export const GET: APIRoute = async ({ locals, request }) => {
 
     const successContext: Record<string, unknown> = {
       userId,
-      include: include.length > 0 ? include : undefined,
     };
+
+    const includeFlags = [
+      include.monthlyTrend ? "monthlyTrend" : null,
+      include.interestBreakdown ? "interestBreakdown" : null,
+      include.adherence ? "adherence" : null,
+    ].filter(Boolean);
+
+    if (includeFlags.length > 0) {
+      successContext.include = includeFlags;
+    }
     if (requestId) {
       successContext.requestId = requestId;
     }
@@ -76,6 +89,16 @@ export const GET: APIRoute = async ({ locals, request }) => {
         logContext,
       );
 
+      return errorResponse(error, requestId);
+    }
+
+    if (error instanceof InvalidIncludeError) {
+      logContext.status = error.status;
+      logContext.code = error.code;
+      logger.warn("dashboard.overview.invalidInclude", error.message, {
+        ...logContext,
+        includeParam,
+      });
       return errorResponse(error, requestId);
     }
 

@@ -70,7 +70,7 @@ export function WizardStepper({
                 onClick={() => onStepChange(step)}
                 onKeyDown={(event) => handleKeyDown(event, step)}
                 className={cn(
-                  "flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left",
+                  "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left",
                   isActive
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border hover:border-primary/40 hover:bg-primary/5",
@@ -82,7 +82,7 @@ export function WizardStepper({
               >
                 <span
                   className={cn(
-                    "mt-0.5 inline-flex size-6 items-center justify-center rounded-full border text-xs font-semibold",
+                    "inline-flex size-7 items-center justify-center rounded-full border text-xs font-semibold",
                     isComplete
                       ? "border-primary bg-primary/15 text-primary"
                       : "border-border bg-card",
@@ -91,11 +91,11 @@ export function WizardStepper({
                 >
                   {index + 1}
                 </span>
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium leading-none">
+                <span className="flex flex-1 flex-col gap-1">
+                  <span className="text-sm font-medium leading-tight">
                     {detail.title}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground leading-tight">
                     {detail.description}
                   </span>
                 </span>
