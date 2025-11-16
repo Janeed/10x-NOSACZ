@@ -11,7 +11,7 @@
 
 ## 2. View List
 
-- Auth: Sign In
+- Auth: Sign In (done)
   - Path: `/auth/signin`
   - Main purpose: Authenticate and establish a session.
   - Key information: Email, password; sign-up and reset links; error messages.
@@ -23,7 +23,7 @@
   - API endpoints: `POST /auth/signin`, `GET /api/session`.
   - PRD stories: US-037, US-040.
 
-- Auth: Sign Up
+- Auth: Sign Up (done)
   - Path: `/auth/signup`
   - Main purpose: Register a new user.
   - Key information: Email, password; minimal requirements per MVP.
