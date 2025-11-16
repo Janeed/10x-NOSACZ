@@ -9,6 +9,7 @@ import { LoansHeader } from "@/components/loans/LoansHeader";
 import { LoansList } from "@/components/loans/LoansList";
 import { LoanEditorSidebar } from "@/components/loans/LoanEditorSidebar";
 import { PaginationControls } from "@/components/loans/PaginationControls";
+import { AppShell } from "@/components/layout/AppShell";
 import { useLoansData } from "@/lib/hooks/useLoansData";
 import { useStaleSimulation } from "@/lib/hooks/useStaleSimulation";
 import type {
@@ -246,84 +247,88 @@ export const LoansPage: FC = () => {
   }, [changeSorting, sorting.field]);
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-6 py-6">
-      {staleState.isStale ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="font-medium">Simulation results may be outdated.</p>
-              {triggerLabel ? (
-                <p className="text-xs text-amber-800">
-                  Triggered by {triggerLabel}. Re-run your simulation to refresh
-                  insights.
+    <AppShell activeNav="loans" title="Loans">
+      <section className="mx-auto w-full max-w-6xl space-y-6 py-6">
+        {staleState.isStale ? (
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="font-medium">
+                  Simulation results may be outdated.
                 </p>
-              ) : null}
+                {triggerLabel ? (
+                  <p className="text-xs text-amber-800">
+                    Triggered by {triggerLabel}. Re-run your simulation to
+                    refresh insights.
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="link"
+                className="px-0"
+                onClick={dismiss}
+              >
+                Dismiss
+              </Button>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="link"
-              className="px-0"
-              onClick={dismiss}
-            >
-              Dismiss
-            </Button>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      <LoansHeader
-        sorting={sorting}
-        onAdd={handleAddLoan}
-        onChangeSortField={handleSortFieldChange}
-        onToggleSortOrder={handleToggleSortOrder}
-        isAddDisabled={isLoading}
-      />
+        <LoansHeader
+          sorting={sorting}
+          onAdd={handleAddLoan}
+          onChangeSortField={handleSortFieldChange}
+          onToggleSortOrder={handleToggleSortOrder}
+          isAddDisabled={isLoading}
+        />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        {isLoading ? (
-          <p className="text-sm text-slate-600">Loading loans…</p>
-        ) : error ? (
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-red-600">
-              Unable to load loans.
-            </p>
-            <p className="text-sm text-red-500">{error.message}</p>
-            <Button type="button" variant="outline" onClick={handleRetry}>
-              Retry
-            </Button>
-          </div>
-        ) : showEmptyState ? (
-          <LoansEmptyState onAdd={handleAddLoan} isAddDisabled={isLoading} />
-        ) : (
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-              <p>
-                Showing{" "}
-                <span className="font-semibold text-slate-900">
-                  {loans.length}
-                </span>{" "}
-                loans · Page {pagination.page} of{" "}
-                {Math.max(pagination.totalPages, 1)}
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          {isLoading ? (
+            <p className="text-sm text-slate-600">Loading loans…</p>
+          ) : error ? (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-red-600">
+                Unable to load loans.
               </p>
-              <p>{pagination.totalItems} total loans tracked</p>
+              <p className="text-sm text-red-500">{error.message}</p>
+              <Button type="button" variant="outline" onClick={handleRetry}>
+                Retry
+              </Button>
             </div>
-            <LoansList
-              loans={loans}
-              sorting={sorting}
-              onSort={changeSorting}
-              onEdit={handleEditLoan}
-              onDelete={handleDeleteLoan}
-              onQuickBalance={handleQuickBalance}
-            />
-            <PaginationControls
-              pagination={pagination}
-              onChangePage={changePage}
-              onChangePageSize={changePageSize}
-              isDisabled={isLoading}
-            />
-          </div>
-        )}
+          ) : showEmptyState ? (
+            <LoansEmptyState onAdd={handleAddLoan} isAddDisabled={isLoading} />
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+                <p>
+                  Showing{" "}
+                  <span className="font-semibold text-slate-900">
+                    {loans.length}
+                  </span>{" "}
+                  loans · Page {pagination.page} of{" "}
+                  {Math.max(pagination.totalPages, 1)}
+                </p>
+                <p>{pagination.totalItems} total loans tracked</p>
+              </div>
+              <LoansList
+                loans={loans}
+                sorting={sorting}
+                onSort={changeSorting}
+                onEdit={handleEditLoan}
+                onDelete={handleDeleteLoan}
+                onQuickBalance={handleQuickBalance}
+              />
+              <PaginationControls
+                pagination={pagination}
+                onChangePage={changePage}
+                onChangePageSize={changePageSize}
+                isDisabled={isLoading}
+              />
+            </div>
+          )}
+        </section>
       </section>
 
       <LoanEditorSidebar
@@ -350,6 +355,6 @@ export const LoansPage: FC = () => {
         onCancel={handleCancelDelete}
         onDeleted={handleLoanDeleted}
       />
-    </section>
+    </AppShell>
   );
 };

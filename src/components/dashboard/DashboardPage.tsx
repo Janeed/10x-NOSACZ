@@ -7,6 +7,7 @@ import { CurrentMonthPanel } from "./currentMonth/CurrentMonthPanel";
 import { LoansSection } from "./loans/LoansSection";
 import { ChartsSection } from "./charts/ChartsSection";
 import { useDashboardData } from "@/lib/hooks/useDashboardData";
+import { AppShell } from "@/components/layout/AppShell";
 
 function DashboardContent() {
   const { activeSimulation, showEmptyState, isLoading, overviewCards, graphs } =
@@ -63,7 +64,9 @@ function DashboardContent() {
 export function DashboardPage() {
   return (
     <DashboardDataProvider>
-      <DashboardContent />
+      <AppShell activeNav="dashboard" title="Dashboard">
+        <DashboardContent />
+      </AppShell>
     </DashboardDataProvider>
   );
 }
