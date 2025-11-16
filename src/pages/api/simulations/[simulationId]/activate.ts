@@ -42,6 +42,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
       supabase,
       userId,
       simulationId,
+      { requestId },
     );
 
     logger.info(EVENT_ACTIVATE, "Simulation activated", {

@@ -421,7 +421,8 @@ export interface Database {
         | "active"
         | "completed"
         | "stale"
-        | "cancelled";
+        | "cancelled"
+        | "error";
     };
     CompositeTypes: Record<never, never>;
   };

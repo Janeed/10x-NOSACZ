@@ -54,6 +54,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       supabase,
       userId,
       simulationId,
+      { requestId },
     );
 
     logger.info(EVENT_CANCEL, "Simulation cancelled", {

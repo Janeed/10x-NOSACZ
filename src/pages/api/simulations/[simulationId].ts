@@ -58,6 +58,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
       userId,
       simulationId,
       include,
+      { requestId },
     );
 
     logger.info(EVENT_DETAIL, "Simulation detail fetched", {

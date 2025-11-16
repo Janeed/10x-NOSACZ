@@ -1,0 +1,208 @@
+# Simulation Calculation Business Implementation Plan
+
+## 1. Purpose
+Introduce asynchronous (fire-and-forget) simulation calculation with automatic retry-on-read while keeping the API response fast and isolating computational logic for future migration to a proper background worker/queue system.
+
+## 2. High-Level Objectives
+- Add a new service: `simulationCalculationService` responsible for loading context, computing results, and persisting them.
+- Trigger computation after a simulation is queued without blocking the `POST /api/simulations` response.
+- On computation failure, mark simulation with `status='error'` (new status) and store minimal error details (optional columns).
+- When client requests simulation detail (`getSimulationDetail`), automatically retry if status is `error`.
+- Keep engine logic pure and modular so it can later run inside an external worker or Supabase Edge Function.
+
+## 3. Domain Extensions
+### 3.1 Status Lifecycle
+Existing statuses: `running`, `completed`, `active`, `cancelled`, `stale`. New status: `error`.
+
+Proposed transitions:
+- Creation: `running`
+- Success: `running → completed`
+- Activation (explicit): `completed → active`
+- Error: `running → error`
+- Retry: `error → running`
+- Cancellation: `running → cancelled`
+- Superseded: any active becoming stale: `active → stale` (already handled elsewhere)
+
+### 3.2 Optional New Fields (Future Migration)
+Add later if necessary:
+- `processing_attempts INT DEFAULT 0`
+- `last_error_code TEXT NULL`
+- `last_error_message TEXT NULL`
+- `last_processed_at TIMESTAMPTZ NULL`
+
+(Initial implementation can rely solely on status + logs.)
+
+## 4. New Service: `simulationCalculationService`
+Located at: `src/lib/services/simulationCalculationService.ts`
+
+### 4.1 Public Orchestration Functions
+1. `scheduleSimulationComputation(supabase, simulationId, userId): void`
+   - Fire-and-forget scheduling (e.g., `setTimeout(() => {...}, 0)` or `queueMicrotask`).
+   - Never throws to caller; all errors logged and simulation updated to `error` internally.
+   - Pre-check simulation status is still `running` before heavy work.
+
+2. `retrySimulationIfErrored(supabase, simulationRow): Promise<boolean>`
+   - Conditional update `status='error'` → `status='running'`.
+   - If update succeeds, calls `scheduleSimulationComputation` again.
+   - Returns `true` if retry initiated.
+
+### 4.2 Internal Pipeline Functions (Pure + Persistence Boundaries)
+Pure (logic-only):
+- `loadSimulationContext(...)` – collects simulation, loans, user settings.
+- `computeBaselineSchedule(input)` – baseline amortization projection (stub now).
+- `applyStrategy(input, baseline)` – strategy-specific modifications (stub now).
+- `aggregateMetrics(baseline, strategyResult)` – unify final metrics.
+- `buildLoanSnapshots(input, strategyResult)` – starting snapshots.
+
+Persistence:
+- `persistSnapshots(supabase, simulationId, userId, snapshots)`
+- `persistHistoryMetric(supabase, simulationId, userId, metrics)`
+- `finalizeSuccess(supabase, simulationId, metrics)`
+- `finalizeError(supabase, simulationId, err)`
+
+### 4.3 End-to-End Flow
+```
+computeAndPersist:
+  load context
+  verify status == running
+  baseline = computeBaselineSchedule
+  strategyResult = applyStrategy
+  metrics = aggregateMetrics
+  snapshots = buildLoanSnapshots
+  persistSnapshots
+  persistHistoryMetric
+  finalizeSuccess (status=completed, set metric fields)
+``` 
+Errors → `finalizeError` and mark status `error`.
+
+## 5. Integration Points
+### 5.1 `queueSimulation` (existing function in `simulationService.ts`)
+After successful insert:
+```ts
+try {
+  scheduleSimulationComputation(supabase, newSimulation.id, userId);
+} catch (e) {
+  logger.error('simulation_schedule_failed', 'Failed to schedule simulation compute', { simulationId: newSimulation.id, userId });
+}
+```
+Consider changing immediate activation: set `is_active=false` at insertion so activation only after review. If kept as `true`, UI must tolerate incomplete metrics.
+
+### 5.2 `getSimulationDetail`
+After row fetch and before assembling response:
+```ts
+if (simulation.status === 'error') {
+  await retrySimulationIfErrored(supabase, simulation);
+}
+```
+Optionally include a `wasRetried` flag in DTO (non-breaking addition).
+
+### 5.3 Dashboard (`getActiveSimulationDashboard`)
+If activation deferred, handle scenario where active simulation still `running` or `error` by returning partial/in-progress state or 404. If activation unchanged, simply display placeholders until metrics appear.
+
+## 6. Concurrency & Idempotency
+- Conditional updates ensure correctness:
+  - Success finalize: `WHERE id=? AND status='running'`
+  - Error finalize: `WHERE id=? AND status='running'`
+  - Retry: `UPDATE ... SET status='running' WHERE id=? AND status='error'`
+- If a retry starts while previous compute finishes, only one finalize succeeds; the other becomes a harmless no-op.
+- Optional future advisory lock (Postgres) or unique processing flag can be added later.
+
+## 7. Error Handling Strategy
+- Catch all thrown errors in compute pipeline.
+- Update simulation to `error` status.
+- Log structured entry: `simulation_compute_failed` with `simulationId`, `userId`, `errorName`, `errorMessage`.
+- No error response mutation for original queueing request.
+- GET triggers automatic retry; repeated failures keep toggling `error` → `running` → `error` until logic fixed (introduce max attempts later).
+
+## 8. Stub Computation (Business-Friendly Defaults)
+While real amortization engine is pending:
+- Baseline months: fixed (e.g., 36) or derived from loan terms.
+- Monthly payment total: sum of `loan.balance * rateFactor` simplified.
+- Strategy reductions:
+  - Avalanche: months reduced by 10%.
+  - Snowball: months reduced by 8%.
+  - Equal / ratio: smaller reductions (5%).
+- Total interest saved: `baselineInterest * reductionFactor`.
+Document clearly in code with `TODO` markers so stakeholders know results are illustrative.
+
+## 9. Logging Events
+New events:
+- `simulation_compute_start`
+- `simulation_compute_success`
+- `simulation_compute_failed`
+- `simulation_compute_retry`
+Existing queue/activate/cancel logs remain unchanged.
+
+## 10. Data Persistence Outline
+```
+INSERT simulation_loan_snapshots (one per loan)
+INSERT simulation_history_metrics (single snapshot for MVP)
+UPDATE simulations SET
+  status='completed',
+  completed_at=NOW(),
+  baseline_interest=?,
+  total_interest_saved=?,
+  projected_months_to_payoff=?,
+  projected_payoff_month=?
+WHERE id=? AND status='running';
+```
+On error:
+```
+UPDATE simulations SET status='error' WHERE id=? AND status='running';
+```
+On retry trigger:
+```
+UPDATE simulations SET status='running' WHERE id=? AND status='error';
+```
+
+## 11. Testing Approach (Business-Level Confidence)
+Phased tests (can start manual):
+1. Queue simulation → verify quick response (202) while computation logs appear later.
+2. Force error (throw in strategy stub) → verify status becomes `error`.
+3. GET detail after error → verify status flips to `running` and logs `simulation_compute_retry`.
+4. Successful compute → verify populated fields (`baselineInterest`, etc.) and status `completed`.
+5. Activation path unchanged (only allowed on `completed`).
+
+## 12. Future Enhancements (Non-Blocking)
+- Replace stubs with amortization engine (multi-loan, variable rates, overpayment distribution).
+- Introduce max retry attempts → new `failed` status.
+- Migrate scheduling to queue system (pg-boss, QStash, Edge Functions) using same internal pure functions.
+- Add performance telemetry (duration, CPU time) for optimization.
+- Batch metrics history snapshots (e.g., monthly recomputes) beyond initial completion snapshot.
+
+## 13. Risks & Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| Infinite retry loop on logic bug | Resource churn | Add attempt counter later; alert on high error frequency |
+| Concurrent retries | Duplicate work | Conditional updates; idempotent finalize |
+| Activation before completion (if `is_active=true`) | Dashboard shows incomplete metrics | Either defer activation or display in-progress UI state |
+| Missing loans / empty dataset | Division by zero or meaningless metrics | Guard: if no loans → mark completed with zero savings |
+| Long compute blocking thread | Slows API in shared process | Fire-and-forget; keep stub fast; later isolate worker |
+
+## 14. Implementation Sequence (Trackable Steps)
+1. Extend `SimulationStatus` type with `'error'`.
+2. Create `simulationCalculationService.ts` file + scaffolding functions.
+3. Implement stub pure functions (baseline, strategy, metrics, snapshots builder).
+4. Implement persistence functions (snapshots, metrics, finalize success/error).
+5. Add `scheduleSimulationComputation` and integrate call into `queueSimulation` (non-blocking).
+6. Add `retrySimulationIfErrored` and integrate into `getSimulationDetail`.
+7. Update logging events.
+8. Manual validation of lifecycle.
+9. Document stubs and future replacement notes (this file + code `TODO`).
+10. (Optional) Add migration for error metadata columns.
+
+## 15. Acceptance Criteria
+- New simulations automatically progress from `running` → `completed` (or `error`).
+- Failed computations automatically retried upon detail fetch.
+- API queue response time unaffected by computation.
+- Core calculation logic isolated and future-worker ready.
+- Logs show clear start/success/failure/retry events.
+
+## 16. Business Value Summary
+This incremental approach delivers visible progression and results for simulations without waiting on full worker infrastructure. It allows early user feedback on strategies while enabling straightforward future scaling. Automatic retries reduce support friction for transient errors. Isolation lowers future migration cost.
+
+## 17. Next Migration Hook
+When queue system is adopted, only `scheduleSimulationComputation` changes to enqueue a job; downstream pure functions and finalize logic remain intact.
+
+---
+**End of Plan**

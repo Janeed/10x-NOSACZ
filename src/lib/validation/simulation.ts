@@ -6,6 +6,7 @@ const simulationStatusEnum = z.enum([
   "completed",
   "stale",
   "cancelled",
+  "error",
 ]);
 const goalTypeEnum = z.enum(["fastest_payoff", "payment_reduction"]);
 

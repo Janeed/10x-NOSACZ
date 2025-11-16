@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     // Call service
     const result: ActiveSimulationDashboardDto =
-      await getActiveSimulationDashboard(supabase, userId);
+      await getActiveSimulationDashboard(supabase, userId, { requestId });
 
     logger.info(EVENT_ACTIVE, "Active simulation dashboard fetched", {
       userId: hashUserId(userId),

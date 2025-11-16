@@ -106,6 +106,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       supabase,
       userId,
       cmd,
+      { requestId },
     );
 
     logger.info(EVENT_QUEUE, "Simulation queued", {

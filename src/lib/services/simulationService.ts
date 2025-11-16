@@ -21,6 +21,25 @@ import {
 } from "../errors.ts";
 import { invalidateDashboardCache } from "./dashboardService.ts";
 import { logger } from "../logger.ts";
+import {
+  scheduleSimulationComputation,
+  retrySimulationIfErrored,
+} from "./simulationCalculationService.ts";
+
+interface SimulationServiceOptions {
+  requestId?: string;
+}
+
+const withServiceLog = (
+  context: Record<string, unknown>,
+  options?: SimulationServiceOptions,
+): Record<string, unknown> => {
+  if (!options?.requestId) {
+    return context;
+  }
+
+  return { ...context, requestId: options.requestId };
+};
 
 type ActiveSimulationDashboardDto = SimulationDetailDto & {
   currentMonthSchedule: {
@@ -207,6 +226,7 @@ export const queueSimulation = async (
   supabase: SupabaseClient<Database>,
   userId: string,
   cmd: CreateSimulationCommand,
+  options?: SimulationServiceOptions,
 ): Promise<SimulationQueuedResponse> => {
   // Check for existing running simulation and cancel it
   const { data: runningSimulations, error: fetchError } = await supabase
@@ -248,11 +268,13 @@ export const queueSimulation = async (
     logger.info(
       "simulation_queue_cancel_previous",
       "Cancelled previous running simulation",
-      {
-        userId,
-        previousSimulationId: runningSimulations[0].id,
-        requestId: "N/A", // TODO: pass requestId if available
-      },
+      withServiceLog(
+        {
+          userId,
+          previousSimulationId: runningSimulations[0].id,
+        },
+        options,
+      ),
     );
   }
 
@@ -299,11 +321,13 @@ export const queueSimulation = async (
     logger.info(
       "simulation_queue_deactivate_previous",
       "Deactivated previous active simulation",
-      {
-        userId,
-        previousSimulationIds: activeSimulations.map((sim) => sim.id),
-        requestId: "N/A",
-      },
+      withServiceLog(
+        {
+          userId,
+          previousSimulationIds: activeSimulations.map((sim) => sim.id),
+        },
+        options,
+      ),
     );
   }
 
@@ -361,10 +385,33 @@ export const queueSimulation = async (
     userId,
     strategy: cmd.strategy,
     goal: cmd.goal,
-    requestId: "N/A", // TODO: pass requestId
+    ...(options?.requestId ? { requestId: options.requestId } : {}),
   });
 
   invalidateDashboardCache(userId);
+
+  try {
+    scheduleSimulationComputation(supabase, newSimulation.id, userId, {
+      requestId: options?.requestId,
+    });
+  } catch (scheduleError) {
+    const errorContext =
+      scheduleError instanceof Error
+        ? { errorName: scheduleError.name, errorMessage: scheduleError.message }
+        : { errorName: "UnknownError", errorMessage: String(scheduleError) };
+    logger.error(
+      "simulation_schedule_failed",
+      "Failed to schedule simulation compute",
+      withServiceLog(
+        {
+          simulationId: newSimulation.id,
+          userId,
+          ...errorContext,
+        },
+        options,
+      ),
+    );
+  }
 
   return {
     simulationId: newSimulation.id,
@@ -379,6 +426,7 @@ export const getSimulationDetail = async (
   userId: string,
   id: string,
   include?: string[],
+  options?: SimulationServiceOptions,
 ): Promise<SimulationDetailDto> => {
   // Fetch simulation
   const { data: simulation, error: simError } = await supabase
@@ -398,6 +446,10 @@ export const getSimulationDetail = async (
       details: withSupabaseError(simError),
     });
   }
+
+  await retrySimulationIfErrored(supabase, simulation, {
+    requestId: options?.requestId,
+  });
 
   const baseDto: SimulationDto = {
     id: simulation.id,
@@ -504,6 +556,7 @@ export const activateSimulation = async (
   supabase: SupabaseClient<Database>,
   userId: string,
   id: string,
+  options?: SimulationServiceOptions,
 ): Promise<SimulationActivationResponse> => {
   // Fetch target simulation
   const { data: targetSim, error: fetchError } = await supabase
@@ -591,20 +644,21 @@ export const activateSimulation = async (
   logger.info("simulation_activate", "Simulation activated", {
     simulationId: id,
     userId,
-    requestId: "N/A",
+    ...(options?.requestId ? { requestId: options.requestId } : {}),
   });
 
   // Invalidate dashboard cache since active simulation changed
   invalidateDashboardCache(userId);
 
   // Return the activated simulation detail
-  return await getSimulationDetail(supabase, userId, id);
+  return await getSimulationDetail(supabase, userId, id, undefined, options);
 };
 
 export const cancelSimulation = async (
   supabase: SupabaseClient<Database>,
   userId: string,
   id: string,
+  options?: SimulationServiceOptions,
 ): Promise<SimulationCancelResponse> => {
   // Fetch simulation
   const { data: simulation, error: fetchError } = await supabase
@@ -649,19 +703,20 @@ export const cancelSimulation = async (
   logger.info("simulation_cancel", "Simulation cancelled", {
     simulationId: id,
     userId,
-    requestId: "N/A",
+    ...(options?.requestId ? { requestId: options.requestId } : {}),
   });
 
   // Invalidate dashboard cache since active simulation changed
   invalidateDashboardCache(userId);
 
   // Return cancelled simulation detail
-  return await getSimulationDetail(supabase, userId, id);
+  return await getSimulationDetail(supabase, userId, id, undefined, options);
 };
 
 export const getActiveSimulationDashboard = async (
   supabase: SupabaseClient<Database>,
   userId: string,
+  options?: SimulationServiceOptions,
 ): Promise<ActiveSimulationDashboardDto> => {
   // Fetch active simulation
   const { data: activeSim, error: fetchError } = await supabase
@@ -690,9 +745,13 @@ export const getActiveSimulationDashboard = async (
   }
 
   // Get detail with loan snapshots
-  const detail = await getSimulationDetail(supabase, userId, activeSim.id, [
-    "loanSnapshots",
-  ]);
+  const detail = await getSimulationDetail(
+    supabase,
+    userId,
+    activeSim.id,
+    ["loanSnapshots"],
+    options,
+  );
 
   // Compute current month schedule (placeholder algorithm)
   const currentMonth = new Date();
