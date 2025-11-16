@@ -1,0 +1,217 @@
+Title: Dashboard Charts – Calculation and Data Delivery Plan (Active Simulation)
+
+Status: Proposed
+Owner: Backend + Frontend (shared)
+Last updated: 2025-11-16
+
+1. Objective
+- Provide complete, deterministic, and performant chart data for the Dashboard charts based on the current active simulation (not historical logs), so that:
+  - Remaining balances monthly trend renders for the active simulation.
+  - Interest vs interest saved monthly breakdown renders for the active simulation.
+  - Data updates after re-simulation and reflects the selected strategy/goal.
+
+2. Scope
+- In-scope
+  - Server-side calculation of monthly projection series for: 
+    - monthlyBalances: [{ month, totalRemaining }]
+    - interestVsSaved: [{ month, interest, interestSaved }]
+  - API: Return graphs when requested via include=graphs (and subflags).
+  - UI: Consume graphs and render charts; display in PLN with pl-PL locale.
+  - Caching, guards for running/stale simulations, and graceful fallbacks.
+- Out of scope
+  - Persisted historical time-series for charts.
+  - Advanced performance optimizations beyond simple caching and month caps.
+  - New DB migrations.
+
+3. Alignment with PRD, API-PLAN, UI-PLAN
+- PRD (US-035, US-017, US-028)
+  - “Graph renders for active simulation only.” → Source data from active simulation projections, not monthly_execution_logs.
+  - “Data updates after re-simulation.” → Invalidate cache on re-simulation; recompute on next dashboard fetch.
+  - Interest saved baseline equals schedule without overpayments at initial simulation time. → Compute interest vs saved relative to baseline.
+- API-PLAN (/api/dashboard/overview, graphs contract)
+  - Return graphs.monthlyBalances and graphs.interestVsSaved when requested by include flags.
+  - Honor requestId propagation and standard error mapping.
+- UI-PLAN (Dashboard)
+  - Dashboard displays charts (BalancesChart, InterestVsSavedChart) with accessible table alternatives and local formatting (pl-PL, PLN).
+  - Stale/running simulation states reflected; charts should handle loading gracefully.
+
+4. High-Level Architecture and Flow
+- Source of truth: Active Simulation + amortization + strategy allocation logic.
+- On GET /api/dashboard/overview?include=graphs[,adherence]:
+  1) Fetch active simulation (required by endpoint behavior).
+  2) Build monthly projections from simulation inputs and strategy logic:
+     - Produce month-by-month aggregates across all loans:
+       - totalRemaining (end-of-month).
+       - interest (charged per month), interestSaved (baseline − projected).
+  3) Compose DashboardOverviewDto with graphs.
+  4) Cache DTO (5 min) keyed by user + include flags.
+  5) UI consumes graphs via DashboardDataProvider/useDashboardData and renders ChartsSection.
+- Fallbacks:
+  - Running simulation → either omit graphs (empty) or return last cached graphs.
+  - No active simulation → endpoint 404 (existing behavior).
+
+5. Data Contracts (no schema change needed)
+- Types already exist in src/types.ts:
+  - DashboardOverviewGraphMonthlyBalancePoint { month: string; totalRemaining: number }
+  - DashboardOverviewGraphInterestPoint { month: string; interest: number; interestSaved: number }
+  - DashboardOverviewGraphData { monthlyBalances?: [...]; interestVsSaved?: [...] }
+- Return under DashboardOverviewDto.graphs when requested.
+
+6. Detailed Implementation Steps
+6.1 Backend – Calculation
+1) Create a projection builder (new file)
+   - Path: src/lib/services/simulationProjectionService.ts
+   - Export:
+     - buildMonthlyProjectionSeries(supabase, userId, activeSimulation, options?)
+       - Returns:
+         {
+           monthlyBalances: DashboardOverviewGraphMonthlyBalancePoint[];
+           interestVsSaved: DashboardOverviewGraphInterestPoint[];
+         }
+       - Options:
+         - maxMonths?: number (default 120 or until payoff)
+         - now?: Date (for deterministic tests)
+   - Responsibilities:
+     - Fetch loans for user (reuse fetchLoans from dashboardService or pass in as param if already fetched).
+     - Compute baseline (no overpayment) amortization schedule per loan.
+     - Compute projected (with overpayments and selected strategy/goal) amortization per loan.
+     - Aggregate per month across loans:
+       - totalRemaining = sum of remaining balances after month end (projected).
+       - interest = sum of projected interest portions for the month.
+       - interestSaved = sum(baseline interest − projected interest) for the month, clamped at ≥0.
+     - Stop when all loans reach zero or maxMonths reached.
+   - Implementation notes:
+     - Reuse core amortization functions in src/lib/services/simulationCalculationService.ts where available; avoid duplicating logic. If needed, add a pure function to expose month-by-month results without persistence side effects.
+     - Respect reinvestReducedPayments and selected goal settings.
+     - For payment reduction goal, monthlyPaymentTotal shifts may change future distributions; ensure consistency with simulation’s strategy function (call shared logic, not reimplement).
+     - Ensure deterministic ISO month strings via a helper isoMonthString(year, monthIndex).
+
+2) Extend existing calculation utilities if needed
+   - In src/lib/services/simulationCalculationService.ts:
+     - Add exported helper generateProjectionTimeline(simulationContext, loans, options) that yields per-month entries (principal, interest, remaining).
+     - Keep functions pure; do not persist. This should mirror the engine used during simulation completion to guarantee parity.
+
+6.2 Backend – Service Integration
+3) Update dashboardService to use projection builder
+   - File: src/lib/services/dashboardService.ts
+   - In getDashboardOverview:
+     - After activeSimulation, loans, currentMonth are fetched:
+       - If include.monthlyTrend || include.interestBreakdown:
+         - Call buildMonthlyProjectionSeries(...)
+         - graphs.monthlyBalances = result.monthlyBalances (only if include.monthlyTrend)
+         - graphs.interestVsSaved = result.interestVsSaved (only if include.interestBreakdown)
+     - Remove reliance on monthly_execution_logs for graphs (retain logs for currentMonth panel only).
+   - Keep existing 5 min cache; include graphs in the cached DTO.
+   - Observability:
+     - Measure compute duration; log with requestId; warn if exceeds threshold (align with PRD performance notes; consider async later if needed).
+
+4) Validation logic (unchanged)
+   - src/lib/validation/dashboard.ts already maps include=graphs → monthlyTrend+interestBreakdown.
+   - No changes required beyond ensuring logic paths are exercised.
+
+6.3 Frontend – Consumption and Rendering
+5) Locale and currency fix in charts
+   - File: src/components/dashboard/charts/ChartsSection.tsx
+   - Replace Intl.NumberFormat("en-US","USD") with pl-PL + PLN per UI-PLAN (and PRD Accessibility basics).
+     - const formatter = new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", maximumFractionDigits: 0 });
+   - Keep current hasData behavior; let charts display empty messages only if arrays are empty and not loading.
+
+6) No change in data flow for UI
+   - DashboardDataProvider already requests include=graphs.
+   - useDashboardData exposes overview.graphs; ChartsSection already accepts these props.
+   - Ensure SimulationStatusBanner/SimulationStaleBanner states remain unchanged.
+
+6.4 Caching, Performance, and Edge Cases
+7) Caching
+   - Keep 5-min cache in dashboardService by userId + include flags.
+   - Invalidate cache when:
+     - Simulation completes, is activated, becomes stale, or is cancelled (existing invalidation entrypoint—ensure usage).
+     - Loan edits and user settings changes already mark simulation stale; ensure any subsequent recompute is made post re-simulation.
+
+8) Performance
+   - Cap months to the earlier of payoff or maxMonths=120 (configurable).
+   - Use pure in-memory loops; avoid N-per-month roundtrips.
+   - If compute time > threshold (e.g., 100ms local target, 2s PRD bound), keep as is for MVP; consider background precompute in future.
+
+9) Running/Queued/ Stale simulations
+   - Running or queued: Return last cached graphs if available; otherwise return empty arrays (UI shows loading or empty state consistent with design).
+   - Stale: Keep showing last valid graphs; banner directs user to re-run (existing behavior).
+
+10) Security & Access Control
+   - Use locals.userId (middleware) and Supabase RLS; only aggregate user-owned loans.
+   - Do not expose loan-level series here; only aggregate monthly totals per charts contract.
+
+7. Testing Plan
+Unit tests (backend):
+  - simulationProjectionService
+    - Zero-loan case → empty arrays.
+    - Single-loan baseline vs projected with overpayment → interestSaved positive and matches expectations.
+    - Multi-loan aggregate sums across loans correctly.
+    - Caps at maxMonths or payoff.
+  - dashboardService
+    - include flags gate chart computation.
+    - Caching returns same DTO within TTL.
+    - Fallback when simulation is running (optional behavior as above).
+
+Integration tests (API):
+  - GET /api/dashboard/overview?include=graphs returns both series with expected shapes.
+  - With no active simulation → 404.
+  - After re-simulation, new series delivered and cache refreshed.
+
+UI tests:
+  - ChartsSection renders summaries and legends when hasData true.
+  - PLN formatting appears (pl-PL, PLN).
+  - Accessible tables rendered correctly on “View table”.
+
+8. Rollout Plan
+1) Implement backend calculation utilities and service integration behind existing include flags.
+2) Update frontend formatting to PLN (small UI-only change).
+3) Deploy and verify with sample fixtures (scripts in /scripts) or local DB seed.
+4) Monitor logs for compute duration; confirm cache hits on repeated dashboard loads.
+
+9. Acceptance Criteria
+- AC1: With an active simulation, GET /api/dashboard/overview?include=graphs returns:
+  - graphs.monthlyBalances: non-empty through payoff or up to cap.
+  - graphs.interestVsSaved: non-empty with non-negative interestSaved.
+- AC2: Dashboard charts render data immediately after a completed simulation without requiring any monthly logs.
+- AC3: Changing loans/settings and re-running simulation updates chart data.
+- AC4: Currency and numbers displayed in PLN with pl-PL locale in chart summaries.
+- AC5: No DB migrations required; request throughput and latency remain acceptable (compute < 2s worst-case; cached responses sub-100ms typical).
+
+10. Compliance with Rules
+- @astro.mdc
+  - Keep endpoint handler pure; rely on Astro locals for user/session; return jsonResponse/errorResponse with X-Request-Id.
+- @backend.mdc
+  - Separate calculation (pure functions) from I/O; typed boundaries via src/types.ts; structured logging; 5-min DTO cache; guard flags via include.
+- @frontend.mdc
+  - No extra API calls added; TanStack Query remains the data source; render loading/empty states gracefully; no blocking UI work.
+- @react.mdc
+  - Components remain pure and memoized where reasonable (useMemo in ChartsSection); accessibility via table alternatives preserved.
+- @shared.mdc
+  - Reuse shared types from src/types.ts; avoid duplicating models; prefer explicit return types; keep functions small and testable.
+
+11. Work Breakdown (Engineer-Trackable Steps)
+- Backend
+  - [ ] Add src/lib/services/simulationProjectionService.ts with buildMonthlyProjectionSeries(...)
+  - [ ] Expose pure generateProjectionTimeline(...) in simulationCalculationService (if needed)
+  - [ ] Wire getDashboardOverview(...) to call buildMonthlyProjectionSeries based on include flags
+  - [ ] Remove graphs dependency on monthly_execution_logs; keep currentMonth logic intact
+  - [ ] Add unit tests for projection builder and service integration
+  - [ ] Log compute timing; warn on slow
+  - [ ] Ensure cache invalidation hooks are invoked after simulation completion/activation
+- Frontend
+  - [ ] Update ChartsSection currency/locale to pl-PL, PLN
+  - [ ] Verify loading/empty messages still accurate
+- Verification
+  - [ ] Manual test: run a simulation, hit /dashboard, verify charts non-empty
+  - [ ] Manual test: edit loan → re-run simulation → charts updated
+
+12. Estimation
+- Backend: 1.5–2.5 days (projection logic + tests + service wiring)
+- Frontend: 0.25 day (formatting + verification)
+- QA/Hardening: 0.5 day
+
+Appendix: Notes
+- interestSaved should be computed as max(baselineInterest − projectedInterest, 0) per month.
+- If future performance is an issue, consider persisting projection snapshots per active simulation with a short TTL and invalidate on resimulations or data changes.
+
