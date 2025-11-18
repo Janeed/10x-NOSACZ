@@ -94,7 +94,7 @@
   - API endpoints: `GET /api/loans`, `POST /api/loans`, `PUT /api/loans/{loanId}`, `PATCH /api/loans/{loanId}`, `DELETE /api/loans/{loanId}`, `GET /api/loan-change-events` (optional).
   - PRD stories: US-001, US-002, US-003, US-004, US-005, US-006, US-025, US-021.
 
-- Settings (User Defaults)
+- Settings (User Defaults) (done)
   - Path: `/settings`
   - Main purpose: Configure monthly overpayment limit and “reinvest reduced payments” default.
   - Key information: Current values, last updated time; validation guidance.

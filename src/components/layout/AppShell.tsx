@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", href: "/dashboard" },
   { key: "loans", label: "Loans", href: "/loans" },
+  { key: "settings", label: "Settings", href: "/settings" },
 ] as const;
 
 export type AppNavKey = (typeof NAV_ITEMS)[number]["key"];
