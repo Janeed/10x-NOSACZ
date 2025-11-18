@@ -47,7 +47,10 @@ const formatMonthLabel = (value: string | Date, short = false) => {
     return String(value);
   }
   if (short) {
-    return date.toLocaleDateString("pl-PL", { month: "short", year: "2-digit" });
+    return date.toLocaleDateString("pl-PL", {
+      month: "short",
+      year: "2-digit",
+    });
   }
   return date.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
 };
@@ -60,15 +63,15 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
 
     // Extract all unique loan IDs
     const allLoanIds = new Set<string>();
-    points.forEach(point => {
-      point.loans?.forEach(loan => allLoanIds.add(loan.loanId));
+    points.forEach((point) => {
+      point.loans?.forEach((loan) => allLoanIds.add(loan.loanId));
     });
     const loanIds = Array.from(allLoanIds);
 
     // Find global max across all loans
     let maxValue = 0;
-    points.forEach(point => {
-      point.loans?.forEach(loan => {
+    points.forEach((point) => {
+      point.loans?.forEach((loan) => {
         maxValue = Math.max(maxValue, loan.interest, loan.interestSaved);
       });
     });
@@ -77,21 +80,42 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
     const stepX = points.length > 1 ? CHART_WIDTH / (points.length - 1) : 0;
 
     // Build coordinates for each loan (interest and saved)
-    const loanInterestLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
-    const loanSavedLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
-    loanIds.forEach(loanId => {
+    const loanInterestLines: Record<
+      string,
+      {
+        x: number;
+        y: number;
+        value: number;
+        month: string;
+        label: string;
+        loanAmount: number;
+      }[]
+    > = {};
+    const loanSavedLines: Record<
+      string,
+      {
+        x: number;
+        y: number;
+        value: number;
+        month: string;
+        label: string;
+        loanAmount: number;
+      }[]
+    > = {};
+    loanIds.forEach((loanId) => {
       loanInterestLines[loanId] = [];
       loanSavedLines[loanId] = [];
     });
 
     points.forEach((point, index) => {
       const x = PADDING_LEFT + index * stepX;
-      point.loans?.forEach(loan => {
+      point.loans?.forEach((loan) => {
         const interestPercent = loan.interest / maxValue;
         const savedPercent = loan.interestSaved / maxValue;
-        const interestY = PADDING_TOP + CHART_HEIGHT - interestPercent * CHART_HEIGHT;
+        const interestY =
+          PADDING_TOP + CHART_HEIGHT - interestPercent * CHART_HEIGHT;
         const savedY = PADDING_TOP + CHART_HEIGHT - savedPercent * CHART_HEIGHT;
-        
+
         loanInterestLines[loan.loanId].push({
           x,
           y: interestY,
@@ -100,7 +124,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
           label: formatMonthLabel(point.month),
           loanAmount: loan.loanAmount,
         });
-        
+
         loanSavedLines[loan.loanId].push({
           x,
           y: savedY,
@@ -113,24 +137,30 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
     });
 
     // Build path strings for each loan
-    const loanPaths = loanIds.map((loanId, index) => {
-      const interestCoords = loanInterestLines[loanId];
-      const savedCoords = loanSavedLines[loanId];
-      if (interestCoords.length === 0) return null;
-      
-      const interestPathString = interestCoords.map(c => `${c.x},${c.y}`).join(" ");
-      const savedPathString = savedCoords.map(c => `${c.x},${c.y}`).join(" ");
-      
-      return {
-        loanId,
-        interestColor: INTEREST_COLORS[index % INTEREST_COLORS.length],
-        savedColor: SAVED_COLORS[index % SAVED_COLORS.length],
-        interestPathString,
-        savedPathString,
-        interestCoordinates: interestCoords,
-        savedCoordinates: savedCoords,
-      };
-    }).filter((loan): loan is NonNullable<typeof loan> => loan !== null);
+    const loanPaths = loanIds
+      .map((loanId, index) => {
+        const interestCoords = loanInterestLines[loanId];
+        const savedCoords = loanSavedLines[loanId];
+        if (interestCoords.length === 0) return null;
+
+        const interestPathString = interestCoords
+          .map((c) => `${c.x},${c.y}`)
+          .join(" ");
+        const savedPathString = savedCoords
+          .map((c) => `${c.x},${c.y}`)
+          .join(" ");
+
+        return {
+          loanId,
+          interestColor: INTEREST_COLORS[index % INTEREST_COLORS.length],
+          savedColor: SAVED_COLORS[index % SAVED_COLORS.length],
+          interestPathString,
+          savedPathString,
+          interestCoordinates: interestCoords,
+          savedCoordinates: savedCoords,
+        };
+      })
+      .filter((loan): loan is NonNullable<typeof loan> => loan !== null);
 
     // Y-axis ticks (7 values)
     const yTicks = Array.from({ length: 7 }, (_, i) => {
@@ -173,7 +203,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
         Compares projected monthly interest charges against the interest saved
         by the active strategy.
       </desc>
-      
+
       {/* Y-axis */}
       <line
         x1={PADDING_LEFT}
@@ -183,7 +213,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
         stroke="#e5e7eb"
         strokeWidth={1}
       />
-      
+
       {/* X-axis */}
       <line
         x1={PADDING_LEFT}
@@ -193,7 +223,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
         stroke="#e5e7eb"
         strokeWidth={1}
       />
-      
+
       {/* Y-axis ticks and labels */}
       {computed.yTicks.map((tick, i) => (
         <g key={i}>
@@ -220,13 +250,13 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
             textAnchor="end"
             dominantBaseline="middle"
             className="text-xs fill-gray-600"
-            style={{ fontSize: '10px' }}
+            style={{ fontSize: "10px" }}
           >
             {currencyFormatter.format(tick.value)}
           </text>
         </g>
       ))}
-      
+
       {/* X-axis ticks and labels */}
       {computed.xTicks.map((tick) => (
         <g key={tick.index}>
@@ -243,13 +273,13 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
             y={computed.chartBottom + 20}
             textAnchor="middle"
             className="text-xs fill-gray-600"
-            style={{ fontSize: '10px' }}
+            style={{ fontSize: "10px" }}
           >
             {tick.label}
           </text>
         </g>
       ))}
-      
+
       {/* Interest lines for each loan */}
       {computed.loanPaths.map((loan) => (
         <g key={`interest-${loan.loanId}`}>
@@ -274,7 +304,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
           ))}
         </g>
       ))}
-      
+
       {/* Saved lines for each loan */}
       {computed.loanPaths.map((loan) => (
         <g key={`saved-${loan.loanId}`}>

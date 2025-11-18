@@ -18,11 +18,7 @@ interface AppShellProps {
   readonly title?: string;
 }
 
-export function AppShell({
-  children,
-  activeNav = "dashboard",
-  title,
-}: AppShellProps) {
+export function AppShell({ children, activeNav = "dashboard" }: AppShellProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {

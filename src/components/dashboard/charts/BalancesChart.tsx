@@ -39,7 +39,10 @@ const formatMonthLabel = (value: string | Date, short = false) => {
     return String(value);
   }
   if (short) {
-    return date.toLocaleDateString("pl-PL", { month: "short", year: "2-digit" });
+    return date.toLocaleDateString("pl-PL", {
+      month: "short",
+      year: "2-digit",
+    });
   }
   return date.toLocaleDateString("pl-PL", { month: "long", year: "numeric" });
 };
@@ -53,8 +56,8 @@ export function BalancesChart({ points }: BalancesChartProps) {
     // Extract all unique loan IDs with their amounts
     const allLoanIds = new Set<string>();
     const loanAmounts = new Map<string, number>();
-    points.forEach(point => {
-      point.loans?.forEach(loan => {
+    points.forEach((point) => {
+      point.loans?.forEach((loan) => {
         allLoanIds.add(loan.loanId);
         if (!loanAmounts.has(loan.loanId)) {
           loanAmounts.set(loan.loanId, loan.loanAmount);
@@ -66,12 +69,12 @@ export function BalancesChart({ points }: BalancesChartProps) {
     // Find global min/max across all loans
     let minValue = Infinity;
     let maxValue = 0;
-    points.forEach(point => {
+    points.forEach((point) => {
       const totalRemaining = point.totalRemaining || 0;
       if (totalRemaining > 0) {
         maxValue = Math.max(maxValue, totalRemaining);
       }
-      point.loans?.forEach(loan => {
+      point.loans?.forEach((loan) => {
         if (loan.remaining > 0) {
           minValue = Math.min(minValue, loan.remaining);
           maxValue = Math.max(maxValue, loan.remaining);
@@ -84,14 +87,24 @@ export function BalancesChart({ points }: BalancesChartProps) {
     const stepX = points.length > 1 ? CHART_WIDTH / (points.length - 1) : 0;
 
     // Build coordinates for each loan
-    const loanLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
-    loanIds.forEach(loanId => {
+    const loanLines: Record<
+      string,
+      {
+        x: number;
+        y: number;
+        value: number;
+        month: string;
+        label: string;
+        loanAmount: number;
+      }[]
+    > = {};
+    loanIds.forEach((loanId) => {
       loanLines[loanId] = [];
     });
 
     points.forEach((point, index) => {
       const x = PADDING_LEFT + index * stepX;
-      point.loans?.forEach(loan => {
+      point.loans?.forEach((loan) => {
         const percent = (loan.remaining - minValue) / range;
         const y = PADDING_TOP + CHART_HEIGHT - percent * CHART_HEIGHT;
         loanLines[loan.loanId].push({
@@ -106,22 +119,27 @@ export function BalancesChart({ points }: BalancesChartProps) {
     });
 
     // Build path strings for each loan
-    const loanPaths = loanIds.map((loanId, index) => {
-      const coords = loanLines[loanId];
-      if (coords.length === 0) return null;
-      const pathString = coords.map(c => `${c.x},${c.y}`).join(" ");
-      return {
-        loanId,
-        color: LOAN_COLORS[index % LOAN_COLORS.length],
-        pathString,
-        coordinates: coords,
-      };
-    }).filter(Boolean);
+    const loanPaths = loanIds
+      .map((loanId, index) => {
+        const coords = loanLines[loanId];
+        if (coords.length === 0) return null;
+        const pathString = coords.map((c) => `${c.x},${c.y}`).join(" ");
+        return {
+          loanId,
+          color: LOAN_COLORS[index % LOAN_COLORS.length],
+          pathString,
+          coordinates: coords,
+        };
+      })
+      .filter(Boolean);
 
     // Y-axis ticks (7 values)
     const yTicks = Array.from({ length: 7 }, (_, i) => {
       const value = minValue + (range * i) / 6;
-      const y = PADDING_TOP + CHART_HEIGHT - ((value - minValue) / range) * CHART_HEIGHT;
+      const y =
+        PADDING_TOP +
+        CHART_HEIGHT -
+        ((value - minValue) / range) * CHART_HEIGHT;
       return { value, y };
     });
 
@@ -158,7 +176,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
         Visualizes projected remaining balances for each month under the active
         strategy.
       </desc>
-      
+
       {/* Y-axis */}
       <line
         x1={PADDING_LEFT}
@@ -168,7 +186,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
         stroke="#e5e7eb"
         strokeWidth={1}
       />
-      
+
       {/* X-axis */}
       <line
         x1={PADDING_LEFT}
@@ -178,7 +196,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
         stroke="#e5e7eb"
         strokeWidth={1}
       />
-      
+
       {/* Y-axis ticks and labels */}
       {computed.yTicks.map((tick, i) => (
         <g key={i}>
@@ -205,13 +223,13 @@ export function BalancesChart({ points }: BalancesChartProps) {
             textAnchor="end"
             dominantBaseline="middle"
             className="text-xs fill-gray-600"
-            style={{ fontSize: '10px' }}
+            style={{ fontSize: "10px" }}
           >
             {currencyFormatter.format(tick.value)}
           </text>
         </g>
       ))}
-      
+
       {/* X-axis ticks and labels */}
       {computed.xTicks.map((tick) => (
         <g key={tick.index}>
@@ -228,13 +246,13 @@ export function BalancesChart({ points }: BalancesChartProps) {
             y={computed.chartBottom + 20}
             textAnchor="middle"
             className="text-xs fill-gray-600"
-            style={{ fontSize: '10px' }}
+            style={{ fontSize: "10px" }}
           >
             {tick.label}
           </text>
         </g>
       ))}
-      
+
       {/* Draw a line for each loan */}
       {computed.loanPaths.map((loanPath, index) => (
         <g key={loanPath?.loanId || index}>

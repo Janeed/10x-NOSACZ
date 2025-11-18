@@ -10,7 +10,6 @@ import type {
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
 import { ActiveSimulationNotFoundError } from "../errors.ts";
-import { logger } from "../logger.ts";
 import {
   computeLoanMetrics,
   buildAdherenceMetrics,
@@ -179,82 +178,6 @@ const fetchCurrentMonthSchedule = async (
   };
 };
 
-const fetchGraphMonthlyBalances = async (
-  supabase: SupabaseClient<Database>,
-  userId: string,
-): Promise<{ month: string; totalRemaining: number }[]> => {
-  // MVP: Aggregate last 12 months
-  const now = new Date();
-  const months = [];
-  for (let i = 11; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(date.toISOString().split("T")[0]);
-  }
-
-  const results = [];
-  for (const month of months) {
-    const { data, error } = await supabase
-      .from("monthly_execution_logs")
-      .select("remaining_balance_after")
-      .eq("user_id", userId)
-      .eq("month_start", month)
-      .not("remaining_balance_after", "is", null);
-
-    if (error) {
-      logger.warn(
-        "fetchMonthlyBalance",
-        "Failed to fetch monthly balance for " + month,
-        { error },
-      );
-      continue;
-    }
-
-    const totalRemaining =
-      data?.reduce((sum, log) => sum + (log.remaining_balance_after || 0), 0) ||
-      0;
-    results.push({ month, totalRemaining });
-  }
-
-  return results;
-};
-
-const fetchGraphInterestVsSaved = async (
-  supabase: SupabaseClient<Database>,
-  userId: string,
-): Promise<{ month: string; interest: number; interestSaved: number }[]> => {
-  // MVP: Similar to monthly balances, but for interest_portion
-  const now = new Date();
-  const months = [];
-  for (let i = 11; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(date.toISOString().split("T")[0]);
-  }
-
-  const results = [];
-  for (const month of months) {
-    const { data, error } = await supabase
-      .from("monthly_execution_logs")
-      .select("interest_portion")
-      .eq("user_id", userId)
-      .eq("month_start", month)
-      .not("interest_portion", "is", null);
-
-    if (error) {
-      logger.warn("fetchInterest", "Failed to fetch interest for " + month, {
-        error,
-      });
-      continue;
-    }
-
-    const interest =
-      data?.reduce((sum, log) => sum + (log.interest_portion || 0), 0) || 0;
-    // MVP: interestSaved = 0
-    results.push({ month, interest, interestSaved: 0 });
-  }
-
-  return results;
-};
-
 const fetchAdherence = async (
   supabase: SupabaseClient<Database>,
   userId: string,
@@ -326,8 +249,12 @@ export const getDashboardOverview = async (
     );
     graphs = {
       ...graphs,
-      ...(include.monthlyTrend ? { monthlyBalances: projectionSeries.monthlyBalances } : {}),
-      ...(include.interestBreakdown ? { interestVsSaved: projectionSeries.interestVsSaved } : {}),
+      ...(include.monthlyTrend
+        ? { monthlyBalances: projectionSeries.monthlyBalances }
+        : {}),
+      ...(include.interestBreakdown
+        ? { interestVsSaved: projectionSeries.interestVsSaved }
+        : {}),
     };
   }
 

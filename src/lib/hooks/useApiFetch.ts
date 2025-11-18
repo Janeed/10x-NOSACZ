@@ -225,7 +225,8 @@ export function useApiFetch() {
             clearSession();
 
             if (typeof window !== "undefined") {
-              const alreadyOnSignin = window.location.pathname === "/auth/signin";
+              const alreadyOnSignin =
+                window.location.pathname === "/auth/signin";
 
               if (!alreadyOnSignin) {
                 window.location.replace("/auth/signin");

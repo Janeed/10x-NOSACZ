@@ -7,9 +7,7 @@ import type {
   ActiveSimulationSummary,
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
-import { logger } from "../logger.ts";
 
-type SimulationRow = Database["public"]["Tables"]["simulations"]["Row"];
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
 type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
 
@@ -55,61 +53,47 @@ const deriveMonthlyPayment = (
   );
 };
 
-const generateBaselineAmortization = (
-  loan: LoanRow,
-  startYear: number,
-  startMonth: number,
-): { month: string; interest: number; principal: number; remaining: number }[] => {
-  const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-  const monthlyPayment = deriveMonthlyPayment(
-    loan.remaining_balance,
-    loan.annual_rate,
-    loan.term_months,
-  );
-
-  const schedule = [];
-  let balance = loan.remaining_balance;
-  let year = startYear;
-  let month = startMonth;
-
-  while (balance > 0.01 && schedule.length < DEFAULT_MAX_MONTHS) {
-    const interest = balance * monthlyRate;
-    const principal = Math.min(monthlyPayment - interest, balance);
-    balance -= principal;
-
-    schedule.push({
-      month: isoMonthString(year, month),
-      interest,
-      principal,
-      remaining: Math.max(0, balance),
-    });
-
-    month++;
-    if (month >= 12) {
-      month = 0;
-      year++;
-    }
-  }
-
-  return schedule;
-};
-
 const generateMultiLoanBaseline = (
   loans: LoanRow[],
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] => {
-  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] = [];
+): {
+  month: string;
+  interest: number;
+  remaining: number;
+  loanData: {
+    loanId: string;
+    loanAmount: number;
+    interest: number;
+    remaining: number;
+  }[];
+}[] => {
+  const schedule: {
+    month: string;
+    interest: number;
+    remaining: number;
+    loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      remaining: number;
+    }[];
+  }[] = [];
   let year = startYear;
   let month = startMonth;
-  let balances = loans.map(loan => loan.remaining_balance);
+  const balances = loans.map((loan) => loan.remaining_balance);
   let monthCount = 0;
 
-  while (balances.some(b => b > 0.01) && monthCount < DEFAULT_MAX_MONTHS) {
+  while (balances.some((b) => b > 0.01) && monthCount < DEFAULT_MAX_MONTHS) {
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
     let totalRemaining = 0;
-    const loanData: Array<{ loanId: string; interest: number; remaining: number }> = [];
+    const loanData: {
+      loanId: string;
+      interest: number;
+      remaining: number;
+      loanAmount: number;
+    }[] = [];
 
     for (let i = 0; i < loans.length; i++) {
       if (balances[i] <= 0) continue;
@@ -125,7 +109,7 @@ const generateMultiLoanBaseline = (
       balances[i] -= principal;
       totalInterest += interest;
       totalRemaining += Math.max(0, balances[i]);
-      
+
       loanData.push({
         loanId: loan.id,
         loanAmount: loan.principal,
@@ -160,31 +144,53 @@ const generateMultiLoanProjected = (
   reinvestReducedPayments: boolean,
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] => {
-  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] = [];
+): {
+  month: string;
+  interest: number;
+  remaining: number;
+  loanData: {
+    loanId: string;
+    loanAmount: number;
+    interest: number;
+    remaining: number;
+  }[];
+}[] => {
+  const schedule: {
+    month: string;
+    interest: number;
+    remaining: number;
+    loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      remaining: number;
+    }[];
+  }[] = [];
   let year = startYear;
   let month = startMonth;
-  let balances = loans.map(loan => loan.remaining_balance);
+  const balances = loans.map((loan) => loan.remaining_balance);
   let monthCount = 0;
 
   // For fastest_payoff, continue until all loans are paid off
   // For payment_reduction, we still need to show the full amortization
   // The maxMonths cap prevents infinite loops
-  while (balances.some(b => b > 0.01) || monthCount < 1) {
+  while (balances.some((b) => b > 0.01) || monthCount < 1) {
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
     let totalRemaining = 0;
-    const loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> = [];
-
-    // Calculate interest for all loans
-    const interests = balances.map((balance, i) => {
-      if (balance <= 0) return 0;
-      const monthlyRate = normalizeAnnualRate(loans[i].annual_rate) / 12;
-      return balance * monthlyRate;
-    });
+    const loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      remaining: number;
+    }[] = [];
 
     // Allocate overpayment
-    const overpaymentAllocation = allocateOverpayment(loans, strategy, monthlyOverpaymentLimit);
+    const overpaymentAllocation = allocateOverpayment(
+      loans,
+      strategy,
+      monthlyOverpaymentLimit,
+    );
 
     for (let i = 0; i < loans.length; i++) {
       if (balances[i] <= 0) continue;
@@ -201,7 +207,7 @@ const generateMultiLoanProjected = (
       balances[i] -= principal;
       totalInterest += interest;
       totalRemaining += Math.max(0, balances[i]);
-      
+
       loanData.push({
         loanId: loan.id,
         loanAmount: loan.principal,
@@ -245,7 +251,10 @@ const allocateOverpayment = (
       let remaining = overpayment;
       for (const item of sortedAvalanche) {
         if (remaining <= 0) break;
-        allocation[item.index] = Math.min(remaining, overpayment / loans.length); // Simplified equal for now
+        allocation[item.index] = Math.min(
+          remaining,
+          overpayment / loans.length,
+        ); // Simplified equal for now
         remaining -= allocation[item.index];
       }
       return allocation;
@@ -253,13 +262,20 @@ const allocateOverpayment = (
     case "snowball":
       // Sort by balance ascending
       const sortedSnowball = loans
-        .map((loan, index) => ({ loan, index, balance: loan.remaining_balance }))
+        .map((loan, index) => ({
+          loan,
+          index,
+          balance: loan.remaining_balance,
+        }))
         .sort((a, b) => a.balance - b.balance);
       const allocationSnow = new Array(loans.length).fill(0);
       let remainingSnow = overpayment;
       for (const item of sortedSnowball) {
         if (remainingSnow <= 0) break;
-        allocationSnow[item.index] = Math.min(remainingSnow, overpayment / loans.length);
+        allocationSnow[item.index] = Math.min(
+          remainingSnow,
+          overpayment / loans.length,
+        );
         remainingSnow -= allocationSnow[item.index];
       }
       return allocationSnow;
@@ -270,10 +286,14 @@ const allocateOverpayment = (
 
     case "ratio":
       // Proportional to interest
-      const interests = loans.map(loan => loan.remaining_balance * (normalizeAnnualRate(loan.annual_rate) / 12));
+      const interests = loans.map(
+        (loan) =>
+          loan.remaining_balance * (normalizeAnnualRate(loan.annual_rate) / 12),
+      );
       const totalInterest = interests.reduce((sum, i) => sum + i, 0);
-      if (totalInterest === 0) return new Array(loans.length).fill(overpayment / loans.length);
-      return interests.map(i => (i / totalInterest) * overpayment);
+      if (totalInterest === 0)
+        return new Array(loans.length).fill(overpayment / loans.length);
+      return interests.map((i) => (i / totalInterest) * overpayment);
   }
 };
 
@@ -339,7 +359,11 @@ export const buildMonthlyProjectionSeries = async (
   }
 
   // Generate baseline and projected for multi-loan
-  const baselineSchedule = generateMultiLoanBaseline(loans, startYear, startMonth);
+  const baselineSchedule = generateMultiLoanBaseline(
+    loans,
+    startYear,
+    startMonth,
+  );
   const projectedSchedule = generateMultiLoanProjected(
     loans,
     simulation.strategy,
@@ -353,11 +377,14 @@ export const buildMonthlyProjectionSeries = async (
   // Aggregate per month with per-loan data
   const monthlyData: Record<
     string,
-    { 
-      totalRemaining: number; 
-      interest: number; 
+    {
+      totalRemaining: number;
+      interest: number;
       baselineInterest: number;
-      projectedLoans: Map<string, { loanAmount: number; remaining: number; interest: number }>;
+      projectedLoans: Map<
+        string,
+        { loanAmount: number; remaining: number; interest: number }
+      >;
       baselineLoans: Map<string, { interest: number }>;
     }
   > = {};
@@ -374,7 +401,7 @@ export const buildMonthlyProjectionSeries = async (
       };
     }
     monthlyData[entry.month].baselineInterest += entry.interest;
-    
+
     // Store per-loan baseline data
     for (const loanEntry of entry.loanData) {
       monthlyData[entry.month].baselineLoans.set(loanEntry.loanId, {
@@ -396,7 +423,7 @@ export const buildMonthlyProjectionSeries = async (
     }
     monthlyData[entry.month].totalRemaining += entry.remaining;
     monthlyData[entry.month].interest += entry.interest;
-    
+
     // Store per-loan projected data
     for (const loanEntry of entry.loanData) {
       monthlyData[entry.month].projectedLoans.set(loanEntry.loanId, {
@@ -410,28 +437,37 @@ export const buildMonthlyProjectionSeries = async (
   const months = Object.keys(monthlyData).sort();
   const monthlyBalances: DashboardOverviewGraphMonthlyBalancePoint[] = [];
   const interestVsSaved: DashboardOverviewGraphInterestPoint[] = [];
-  
+
   for (const month of months) {
     const data = monthlyData[month];
 
-    if (data.totalRemaining <= 0){
-        break;
+    if (data.totalRemaining <= 0) {
+      break;
     }
 
     // Build per-loan arrays for this month
-    const loanBalances: Array<{ loanId: string; loanAmount: number; remaining: number }> = [];
-    const loanInterests: Array<{ loanId: string; loanAmount: number; interest: number; interestSaved: number }> = [];
-    
+    const loanBalances: {
+      loanId: string;
+      loanAmount: number;
+      remaining: number;
+    }[] = [];
+    const loanInterests: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      interestSaved: number;
+    }[] = [];
+
     data.projectedLoans.forEach((projectedData, loanId) => {
       loanBalances.push({
         loanId,
         loanAmount: projectedData.loanAmount,
         remaining: projectedData.remaining,
       });
-      
+
       const baselineData = data.baselineLoans.get(loanId);
       const baselineInterest = baselineData?.interest || 0;
-      
+
       loanInterests.push({
         loanId,
         loanAmount: projectedData.loanAmount,
