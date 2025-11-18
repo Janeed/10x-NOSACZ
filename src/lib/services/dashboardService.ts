@@ -78,7 +78,7 @@ const fetchActiveSimulation = async (
   const { data, error } = await supabase
     .from("simulations")
     .select(
-      "id, strategy, goal, projected_payoff_month, total_interest_saved, status, stale",
+      "id, strategy, goal, projected_payoff_month, total_interest_saved, status, stale, payment_reduction_target",
     )
     .eq("user_id", userId)
     .eq("is_active", true)
@@ -102,6 +102,7 @@ const fetchActiveSimulation = async (
     totalInterestSaved: data.total_interest_saved || 0,
     status: data.status,
     stale: data.stale ?? false,
+    paymentReductionTarget: data.payment_reduction_target,
   };
 };
 

@@ -105,7 +105,7 @@ export function StatusBanner({
         variantStyles[status.phase],
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start justify-center gap-3">
         <Icon
           aria-hidden
           className={cn("mt-0.5 size-5", spinner ? "animate-spin" : undefined)}
@@ -134,6 +134,14 @@ export function StatusBanner({
               Simulation ID:{" "}
               <span className="font-mono">{status.simulationId}</span>
             </p>
+          ) : null}
+          {status.completedAt ? (
+            <a
+              href="/dashboard"
+              className="inline-flex items-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*='size-'])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md gap-1.5 px-3 has-[&gt;svg]:px-2.5 w-full justify-center"
+            >
+              Review Dashboard
+            </a>
           ) : null}
         </div>
       </div>

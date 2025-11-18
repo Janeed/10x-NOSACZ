@@ -139,7 +139,7 @@ const generateMultiLoanBaseline = (
 const generateMultiLoanProjected = (
   loans: LoanRow[],
   strategy: string,
-  goal: string,
+  paymentReductionTarget: number | null,
   monthlyOverpaymentLimit: number,
   reinvestReducedPayments: boolean,
   startYear: number,
@@ -169,7 +169,15 @@ const generateMultiLoanProjected = (
   let year = startYear;
   let month = startMonth;
   const balances = loans.map((loan) => loan.remaining_balance);
+  const firstMonthPayments = loans.map((loan) => {
+    return deriveMonthlyPayment(
+      loan.remaining_balance,
+      loan.annual_rate,
+      loan.term_months,
+    );
+  });
   let monthCount = 0;
+  let monthlyReducedPaymentsTotal = 0;
 
   // For fastest_payoff, continue until all loans are paid off
   // For payment_reduction, we still need to show the full amortization
@@ -183,13 +191,15 @@ const generateMultiLoanProjected = (
       loanAmount: number;
       interest: number;
       remaining: number;
+      payment: number;
     }[] = [];
 
     // Allocate overpayment
     const overpaymentAllocation = allocateOverpayment(
       loans,
       strategy,
-      monthlyOverpaymentLimit,
+      monthlyOverpaymentLimit +
+        (reinvestReducedPayments ? monthlyReducedPaymentsTotal : 0),
     );
 
     for (let i = 0; i < loans.length; i++) {
@@ -202,6 +212,7 @@ const generateMultiLoanProjected = (
         loan.term_months,
       );
       const totalPayment = standardPayment + overpaymentAllocation[i];
+
       const interest = balances[i] * monthlyRate;
       const principal = Math.min(totalPayment - interest, balances[i]);
       balances[i] -= principal;
@@ -213,6 +224,7 @@ const generateMultiLoanProjected = (
         loanAmount: loan.principal,
         interest,
         remaining: Math.max(0, balances[i]),
+        payment: principal,
       });
     }
 
@@ -222,6 +234,24 @@ const generateMultiLoanProjected = (
       remaining: totalRemaining,
       loanData,
     });
+
+    if (month || year) {
+      monthlyReducedPaymentsTotal = loanData.reduce(
+        (sum, loan, index) => sum + (firstMonthPayments[index] - loan.payment),
+        0,
+      );
+    }
+
+    if (paymentReductionTarget !== null && strategy === "payment_reduction") {
+      const currentMonthlyPayments = loanData.reduce(
+        (sum, loan) => sum + loan.payment,
+        0,
+      );
+
+      if (currentMonthlyPayments <= paymentReductionTarget) {
+        break;
+      }
+    }
 
     month++;
     if (month >= 12) {
@@ -367,7 +397,7 @@ export const buildMonthlyProjectionSeries = async (
   const projectedSchedule = generateMultiLoanProjected(
     loans,
     simulation.strategy,
-    simulation.goal,
+    simulation.paymentReductionTarget,
     userSettings?.monthly_overpayment_limit || 0,
     userSettings?.reinvest_reduced_payments || false,
     startYear,

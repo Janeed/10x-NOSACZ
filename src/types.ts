@@ -408,6 +408,7 @@ export type ActiveSimulationSummary = Pick<
   | "totalInterestSaved"
   | "status"
   | "stale"
+  | "paymentReductionTarget"
 > & {
   projectedPayoffMonth: SimulationRow["projected_payoff_month"];
   totalInterestSaved: SimulationRow["total_interest_saved"];
