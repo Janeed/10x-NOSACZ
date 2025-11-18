@@ -279,7 +279,7 @@ export const computeSimulationMetrics = (
     context.simulation.strategy,
     null, // null = fastest payoff (not payment reduction)
     context.simulation.monthly_overpayment_limit,
-    false, // don't reinvest reduced payments in calculation service
+    context.simulation.reinvest_reduced_payments, // Use simulation's stored setting
     startYear,
     startMonth,
   );

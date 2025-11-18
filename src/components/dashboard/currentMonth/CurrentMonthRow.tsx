@@ -33,7 +33,7 @@ export function CurrentMonthRow({
       <td className="px-4 py-4 align-top">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-foreground">
-            Loan ({entry.loanInitialAmount}zł left)
+            Loan ({currencyFormatter.format(entry.loanInitialAmount)} left)
           </span>
           <LoanStatusBadge isClosed={entry.isClosed} />
         </div>
