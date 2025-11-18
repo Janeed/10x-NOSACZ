@@ -14,14 +14,15 @@ const formatCurrency = (value: number) => {
 
 interface LoanRowProps {
   readonly loan: DashboardLoanVM;
+  readonly index: number;
 }
 
-export function LoanRow({ loan }: LoanRowProps) {
+export function LoanRow({ loan, index }: LoanRowProps) {
   return (
     <tr className="border-b border-border/40 last:border-none hover:bg-muted/40">
       <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-foreground">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{loan.loanId}</span>
+          <span className="font-semibold">Loan {index}</span>
           <LoanStatusBadge isClosed={loan.isClosed} />
         </div>
       </td>

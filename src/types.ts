@@ -442,6 +442,7 @@ export interface DashboardOverviewGraphMonthlyBalancePoint {
   totalRemaining: number;
   loans: Array<{
     loanId: string;
+    loanAmount: number;
     remaining: number;
   }>;
 }
@@ -452,6 +453,7 @@ export interface DashboardOverviewGraphInterestPoint {
   interestSaved: number;
   loans: Array<{
     loanId: string;
+    loanAmount: number;
     interest: number;
     interestSaved: number;
   }>;

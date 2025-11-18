@@ -98,8 +98,8 @@ const generateMultiLoanBaseline = (
   loans: LoanRow[],
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] => {
-  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] = [];
+): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] => {
+  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] = [];
   let year = startYear;
   let month = startMonth;
   let balances = loans.map(loan => loan.remaining_balance);
@@ -128,6 +128,7 @@ const generateMultiLoanBaseline = (
       
       loanData.push({
         loanId: loan.id,
+        loanAmount: loan.principal,
         interest,
         remaining: Math.max(0, balances[i]),
       });
@@ -159,8 +160,8 @@ const generateMultiLoanProjected = (
   reinvestReducedPayments: boolean,
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] => {
-  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] = [];
+): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] => {
+  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> }[] = [];
   let year = startYear;
   let month = startMonth;
   let balances = loans.map(loan => loan.remaining_balance);
@@ -169,11 +170,11 @@ const generateMultiLoanProjected = (
   // For fastest_payoff, continue until all loans are paid off
   // For payment_reduction, we still need to show the full amortization
   // The maxMonths cap prevents infinite loops
-  while (balances.some(b => b > 0.01) && monthCount < DEFAULT_MAX_MONTHS) {
+  while (balances.some(b => b > 0.01) || monthCount < 1) {
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
     let totalRemaining = 0;
-    const loanData: Array<{ loanId: string; interest: number; remaining: number }> = [];
+    const loanData: Array<{ loanId: string; loanAmount: number; interest: number; remaining: number }> = [];
 
     // Calculate interest for all loans
     const interests = balances.map((balance, i) => {
@@ -203,6 +204,7 @@ const generateMultiLoanProjected = (
       
       loanData.push({
         loanId: loan.id,
+        loanAmount: loan.principal,
         interest,
         remaining: Math.max(0, balances[i]),
       });
@@ -355,7 +357,7 @@ export const buildMonthlyProjectionSeries = async (
       totalRemaining: number; 
       interest: number; 
       baselineInterest: number;
-      projectedLoans: Map<string, { remaining: number; interest: number }>;
+      projectedLoans: Map<string, { loanAmount: number; remaining: number; interest: number }>;
       baselineLoans: Map<string, { interest: number }>;
     }
   > = {};
@@ -398,6 +400,7 @@ export const buildMonthlyProjectionSeries = async (
     // Store per-loan projected data
     for (const loanEntry of entry.loanData) {
       monthlyData[entry.month].projectedLoans.set(loanEntry.loanId, {
+        loanAmount: loanEntry.loanAmount,
         remaining: loanEntry.remaining,
         interest: loanEntry.interest,
       });
@@ -416,12 +419,13 @@ export const buildMonthlyProjectionSeries = async (
     }
 
     // Build per-loan arrays for this month
-    const loanBalances: Array<{ loanId: string; remaining: number }> = [];
-    const loanInterests: Array<{ loanId: string; interest: number; interestSaved: number }> = [];
+    const loanBalances: Array<{ loanId: string; loanAmount: number; remaining: number }> = [];
+    const loanInterests: Array<{ loanId: string; loanAmount: number; interest: number; interestSaved: number }> = [];
     
     data.projectedLoans.forEach((projectedData, loanId) => {
       loanBalances.push({
         loanId,
+        loanAmount: projectedData.loanAmount,
         remaining: projectedData.remaining,
       });
       
@@ -430,6 +434,7 @@ export const buildMonthlyProjectionSeries = async (
       
       loanInterests.push({
         loanId,
+        loanAmount: projectedData.loanAmount,
         interest: projectedData.interest,
         interestSaved: Math.max(0, baselineInterest - projectedData.interest),
       });

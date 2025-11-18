@@ -50,10 +50,16 @@ export function BalancesChart({ points }: BalancesChartProps) {
       return null;
     }
 
-    // Extract all unique loan IDs
+    // Extract all unique loan IDs with their amounts
     const allLoanIds = new Set<string>();
+    const loanAmounts = new Map<string, number>();
     points.forEach(point => {
-      point.loans?.forEach(loan => allLoanIds.add(loan.loanId));
+      point.loans?.forEach(loan => {
+        allLoanIds.add(loan.loanId);
+        if (!loanAmounts.has(loan.loanId)) {
+          loanAmounts.set(loan.loanId, loan.loanAmount);
+        }
+      });
     });
     const loanIds = Array.from(allLoanIds);
 
@@ -78,7 +84,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
     const stepX = points.length > 1 ? CHART_WIDTH / (points.length - 1) : 0;
 
     // Build coordinates for each loan
-    const loanLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string }>> = {};
+    const loanLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
     loanIds.forEach(loanId => {
       loanLines[loanId] = [];
     });
@@ -94,6 +100,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
           value: loan.remaining,
           month: point.month,
           label: formatMonthLabel(point.month),
+          loanAmount: loan.loanAmount,
         });
       });
     });
@@ -247,7 +254,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
                   r={4}
                   fill={loanPath.color}
                 >
-                  <title>{`Pożyczka ${loanPath.loanId}: ${point.label} - ${currencyFormatter.format(point.value)}`}</title>
+                  <title>{`Pożyczka ${currencyFormatter.format(point.loanAmount)}: ${point.label} - ${currencyFormatter.format(point.value)}`}</title>
                 </circle>
               ))}
             </>

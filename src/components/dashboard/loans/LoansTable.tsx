@@ -37,8 +37,8 @@ export function LoansTable({ loans }: LoansTableProps) {
           </tr>
         </thead>
         <tbody>
-          {loans.map((loan) => (
-            <LoanRow key={loan.loanId} loan={loan} />
+          {loans.map((loan, index) => (
+            <LoanRow key={loan.loanId} loan={loan} index={index} />
           ))}
         </tbody>
       </table>

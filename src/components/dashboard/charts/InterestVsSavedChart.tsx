@@ -77,8 +77,8 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
     const stepX = points.length > 1 ? CHART_WIDTH / (points.length - 1) : 0;
 
     // Build coordinates for each loan (interest and saved)
-    const loanInterestLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string }>> = {};
-    const loanSavedLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string }>> = {};
+    const loanInterestLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
+    const loanSavedLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string; loanAmount: number }>> = {};
     loanIds.forEach(loanId => {
       loanInterestLines[loanId] = [];
       loanSavedLines[loanId] = [];
@@ -98,6 +98,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
           value: loan.interest,
           month: point.month,
           label: formatMonthLabel(point.month),
+          loanAmount: loan.loanAmount,
         });
         
         loanSavedLines[loan.loanId].push({
@@ -106,6 +107,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
           value: loan.interestSaved,
           month: point.month,
           label: formatMonthLabel(point.month),
+          loanAmount: loan.loanAmount,
         });
       });
     });
@@ -266,7 +268,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
               fill={loan.interestColor}
             >
               <title>
-                {`Kredyt ${loan.loanId} - ${coord.label}: Odsetki ${currencyFormatter.format(coord.value)}`}
+                {`Loan ${currencyFormatter.format(coord.loanAmount)}: ${coord.label} - Interest ${currencyFormatter.format(coord.value)}`}
               </title>
             </circle>
           ))}
@@ -292,7 +294,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
               fill={loan.savedColor}
             >
               <title>
-                {`Kredyt ${loan.loanId} - ${coord.label}: Zaoszczędzone ${currencyFormatter.format(coord.value)}`}
+                {`Loan ${currencyFormatter.format(coord.loanAmount)}: ${coord.label} - Total saved ${currencyFormatter.format(coord.value)}`}
               </title>
             </circle>
           ))}
