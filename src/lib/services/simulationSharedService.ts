@@ -167,3 +167,127 @@ export const computeProjectedPayoffMonth = (
 
   return dateToIsoString(projected);
 };
+
+/**
+ * Loan data for use in projection calculations.
+ * Subset of database LoanRow with only fields needed for projections.
+ */
+export interface ProjectionLoan {
+  id: string;
+  principal: number;
+  remaining_balance: number;
+  annual_rate: number;
+  term_months: number;
+}
+
+/**
+ * Generates a month-by-month baseline projection for multiple loans.
+ * Uses standard amortization with no overpayments.
+ * This is the authoritative projection logic used across services.
+ *
+ * @param loans - Array of loans to project
+ * @param startYear - Starting year for projection
+ * @param startMonth - Starting month (0-indexed: 0 = January)
+ * @param maxMonths - Maximum months to project (default: 600 / 50 years)
+ * @param additionalPaymentPerLoan - Optional extra payment per loan per month
+ * @returns Array of monthly projection data with totals and per-loan breakdowns
+ *
+ * @example
+ * const projection = generateBaselineProjection(loans, 2025, 0, 360);
+ * // Returns monthly data: month, interest, remaining, plus per-loan details
+ */
+export const generateBaselineProjection = (
+  loans: ProjectionLoan[],
+  startYear: number,
+  startMonth: number,
+  maxMonths = 600,
+  additionalPaymentPerLoan = 0,
+): {
+  month: string;
+  interest: number;
+  principal: number;
+  remaining: number;
+  loanData: {
+    loanId: string;
+    loanAmount: number;
+    interest: number;
+    principal: number;
+    remaining: number;
+  }[];
+}[] => {
+  const schedule: {
+    month: string;
+    interest: number;
+    principal: number;
+    remaining: number;
+    loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      principal: number;
+      remaining: number;
+    }[];
+  }[] = [];
+
+  let year = startYear;
+  let month = startMonth;
+  const balances = loans.map((loan) => loan.remaining_balance);
+  let monthCount = 0;
+
+  while (balances.some((b) => b > 0.01) && monthCount < maxMonths) {
+    const monthStr = isoMonthString(year, month);
+    let totalInterest = 0;
+    let totalPrincipal = 0;
+    let totalRemaining = 0;
+    const loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      principal: number;
+      remaining: number;
+    }[] = [];
+
+    for (let i = 0; i < loans.length; i++) {
+      if (balances[i] <= 0) continue;
+
+      const loan = loans[i];
+      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
+      const standardPayment = deriveStandardMonthlyPayment(
+        loan.remaining_balance,
+        loan.annual_rate,
+        loan.term_months,
+      );
+      const totalPayment = standardPayment + additionalPaymentPerLoan;
+      const interest = balances[i] * monthlyRate;
+      const principal = Math.min(totalPayment - interest, balances[i]);
+
+      balances[i] -= principal;
+      totalInterest += interest;
+      totalPrincipal += principal;
+      totalRemaining += Math.max(0, balances[i]);
+
+      loanData.push({
+        loanId: loan.id,
+        loanAmount: loan.principal,
+        interest,
+        principal,
+        remaining: Math.max(0, balances[i]),
+      });
+    }
+
+    schedule.push({
+      month: monthStr,
+      interest: totalInterest,
+      principal: totalPrincipal,
+      remaining: totalRemaining,
+      loanData,
+    });
+
+    const next = incrementMonth(year, month);
+    year = next.year;
+    month = next.month;
+    monthCount++;
+  }
+
+  return schedule;
+};

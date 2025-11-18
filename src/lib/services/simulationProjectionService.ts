@@ -11,7 +11,7 @@ import {
   normalizeAnnualRate,
   isoMonthString,
   deriveStandardMonthlyPayment,
-  incrementMonth,
+  generateBaselineProjection,
 } from "./simulationSharedService.ts";
 
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
@@ -33,86 +33,7 @@ export interface MonthlyProjectionEntry {
 
 const DEFAULT_MAX_MONTHS = 600; // 50 years
 
-const generateMultiLoanBaseline = (
-  loans: LoanRow[],
-  startYear: number,
-  startMonth: number,
-): {
-  month: string;
-  interest: number;
-  remaining: number;
-  loanData: {
-    loanId: string;
-    loanAmount: number;
-    interest: number;
-    remaining: number;
-  }[];
-}[] => {
-  const schedule: {
-    month: string;
-    interest: number;
-    remaining: number;
-    loanData: {
-      loanId: string;
-      loanAmount: number;
-      interest: number;
-      remaining: number;
-    }[];
-  }[] = [];
-  let year = startYear;
-  let month = startMonth;
-  const balances = loans.map((loan) => loan.remaining_balance);
-  let monthCount = 0;
-
-  while (balances.some((b) => b > 0.01) && monthCount < DEFAULT_MAX_MONTHS) {
-    const monthStr = isoMonthString(year, month);
-    let totalInterest = 0;
-    let totalRemaining = 0;
-    const loanData: {
-      loanId: string;
-      interest: number;
-      remaining: number;
-      loanAmount: number;
-    }[] = [];
-
-    for (let i = 0; i < loans.length; i++) {
-      if (balances[i] <= 0) continue;
-      const loan = loans[i];
-      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-      const standardPayment = deriveStandardMonthlyPayment(
-        loan.remaining_balance,
-        loan.annual_rate,
-        loan.term_months,
-      );
-      const interest = balances[i] * monthlyRate;
-      const principal = Math.min(standardPayment - interest, balances[i]);
-      balances[i] -= principal;
-      totalInterest += interest;
-      totalRemaining += Math.max(0, balances[i]);
-
-      loanData.push({
-        loanId: loan.id,
-        loanAmount: loan.principal,
-        interest,
-        remaining: Math.max(0, balances[i]),
-      });
-    }
-
-    schedule.push({
-      month: monthStr,
-      interest: totalInterest,
-      remaining: totalRemaining,
-      loanData,
-    });
-
-    const next = incrementMonth(year, month);
-    year = next.year;
-    month = next.month;
-    monthCount++;
-  }
-
-  return schedule;
-};
+// generateMultiLoanBaseline is now replaced by shared generateBaselineProjection
 
 const generateMultiLoanProjected = (
   loans: LoanRow[],
@@ -367,10 +288,11 @@ export const buildMonthlyProjectionSeries = async (
   }
 
   // Generate baseline and projected for multi-loan
-  const baselineSchedule = generateMultiLoanBaseline(
+  const baselineSchedule = generateBaselineProjection(
     loans,
     startYear,
     startMonth,
+    options?.maxMonths ?? DEFAULT_MAX_MONTHS,
   );
   const projectedSchedule = generateMultiLoanProjected(
     loans,

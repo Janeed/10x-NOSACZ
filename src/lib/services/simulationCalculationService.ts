@@ -4,9 +4,9 @@ import type { Database } from "../../db/database.types.ts";
 import type { SimulationStatus } from "../../types.ts";
 import { logger } from "../logger.ts";
 import {
-  normalizeAnnualRate,
-  isoMonthStringByYearMonth as sharedIsoMonthStringByYearMonth,
   computeProjectedPayoffMonth as sharedComputeProjectedPayoffMonth,
+  deriveStandardMonthlyPayment,
+  generateBaselineProjection,
 } from "./simulationSharedService.ts";
 
 type SimulationRow = Database["public"]["Tables"]["simulations"]["Row"];
@@ -93,16 +93,7 @@ const captureErrorDetails = (
 };
 
 // Date and month utilities are now imported from simulationSharedService
-
-const deriveMonthlyPayment = (loan: LoanRow): number => {
-  const normalizedRate = normalizeAnnualRate(loan.annual_rate);
-  if (normalizedRate === 0) {
-    /* Lines 108-111 omitted */
-  }
-
-  return loan.remaining_balance * (normalizedRate / 12);
-};
-
+// deriveStandardMonthlyPayment is now imported from simulationSharedService
 // computeProjectedPayoffMonth is now imported from simulationSharedService
 
 export const scheduleSimulationComputation = (
@@ -275,7 +266,13 @@ export const computeBaselineSchedule = (
     : DEFAULT_BASELINE_MONTHS;
 
   const monthlyPaymentTotal = context.loans.reduce(
-    (sum, loan) => sum + deriveMonthlyPayment(loan),
+    (sum, loan) =>
+      sum +
+      deriveStandardMonthlyPayment(
+        loan.remaining_balance,
+        loan.annual_rate,
+        loan.term_months,
+      ),
     0,
   );
 
@@ -599,63 +596,31 @@ export const generateProjectionTimeline = (
   interest: number;
   remaining: number;
 }[] => {
-  // Implement per-month projection timeline mirroring simulation logic
   const maxMonths = options?.maxMonths || 120;
   const now = options?.now || new Date();
   const startYear = now.getFullYear();
   const startMonth = now.getMonth();
 
-  const loans = simulationContext.loans;
-  if (loans.length === 0) return [];
+  if (simulationContext.loans.length === 0) return [];
 
-  // Simplified multi-loan projection
-  const schedule: {
-    month: string;
-    principal: number;
-    interest: number;
-    remaining: number;
-  }[] = [];
-  let year = startYear;
-  let month = startMonth;
-  const balances = loans.map((loan) => loan.remaining_balance);
-  let monthCount = 0;
+  // Use shared baseline projection with overpayment split evenly
+  const additionalPaymentPerLoan =
+    simulationContext.simulation.monthly_overpayment_limit /
+    simulationContext.loans.length;
 
-  while (balances.some((b) => b > 0.01) && monthCount < maxMonths) {
-    const monthStr = sharedIsoMonthStringByYearMonth(year, month + 1);
-    let totalPrincipal = 0;
-    let totalInterest = 0;
-    let totalRemaining = 0;
+  const projection = generateBaselineProjection(
+    simulationContext.loans,
+    startYear,
+    startMonth,
+    maxMonths,
+    additionalPaymentPerLoan,
+  );
 
-    for (let i = 0; i < loans.length; i++) {
-      if (balances[i] <= 0) continue;
-      const loan = loans[i];
-      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-      const standardPayment = deriveMonthlyPayment(loan);
-      const totalPayment =
-        standardPayment +
-        simulationContext.simulation.monthly_overpayment_limit / loans.length; // Simplified
-      const interest = balances[i] * monthlyRate;
-      const principal = Math.min(totalPayment - interest, balances[i]);
-      balances[i] -= principal;
-      totalPrincipal += principal;
-      totalInterest += interest;
-      totalRemaining += Math.max(0, balances[i]);
-    }
-
-    schedule.push({
-      month: monthStr,
-      principal: totalPrincipal,
-      interest: totalInterest,
-      remaining: totalRemaining,
-    });
-
-    month++;
-    if (month >= 12) {
-      month = 0;
-      year++;
-    }
-    monthCount++;
-  }
-
-  return schedule;
+  // Map to expected return format
+  return projection.map((entry) => ({
+    month: entry.month,
+    principal: entry.principal,
+    interest: entry.interest,
+    remaining: entry.remaining,
+  }));
 };

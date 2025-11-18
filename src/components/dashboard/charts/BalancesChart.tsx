@@ -272,7 +272,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
                   r={4}
                   fill={loanPath.color}
                 >
-                  <title>{`Pożyczka ${currencyFormatter.format(point.loanAmount)}: ${point.label} - ${currencyFormatter.format(point.value)}`}</title>
+                  <title>{`Loan ${currencyFormatter.format(point.loanAmount)}: ${point.label} - ${currencyFormatter.format(point.value)}`}</title>
                 </circle>
               ))}
             </>
