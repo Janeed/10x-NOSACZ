@@ -7,6 +7,7 @@ import {
   computeProjectedPayoffMonth as sharedComputeProjectedPayoffMonth,
   deriveStandardMonthlyPayment,
   generateBaselineProjection,
+  generateStrategyProjection,
 } from "./simulationSharedService.ts";
 
 type SimulationRow = Database["public"]["Tables"]["simulations"]["Row"];
@@ -58,15 +59,7 @@ export interface LoanSnapshotDraft {
   startingRate: number;
 }
 
-const DEFAULT_BASELINE_MONTHS = 36;
 const MIN_MONTHS = 1;
-const STRATEGY_REDUCTION_MAP: Record<string, number> = {
-  avalanche: 0.1,
-  snowball: 0.08,
-  equal: 0.05,
-  ratio: 0.05,
-};
-const FALLBACK_REDUCTION = 0.04;
 
 const withLogContext = (
   base: Record<string, unknown>,
@@ -240,30 +233,62 @@ export const loadSimulationContext = async (
   };
 };
 
-export const computeBaselineSchedule = (
+export const computeSimulationMetrics = (
   context: SimulationComputationContext,
-): BaselineSchedule => {
+): { baseline: BaselineSchedule; strategy: StrategyComputationResult } => {
   if (context.loans.length === 0) {
-    return {
+    const projectedPayoffMonth = sharedComputeProjectedPayoffMonth(
+      context.simulation.started_at ?? context.simulation.created_at,
+      0,
+    );
+
+    const emptyBaseline: BaselineSchedule = {
       monthsToPayoff: 0,
       monthlyPaymentTotal: 0,
       totalInterest: 0,
       totalPrincipal: 0,
     };
+
+    const emptyStrategy: StrategyComputationResult = {
+      monthsToPayoff: 0,
+      monthlyPaymentTotal: 0,
+      totalInterestSaved: 0,
+      projectedPayoffMonth,
+      reductionFactor: 0,
+    };
+
+    return { baseline: emptyBaseline, strategy: emptyStrategy };
   }
 
+  // Calculate baseline and strategy projections
+  const now = context.simulation.started_at
+    ? new Date(context.simulation.started_at)
+    : new Date();
+  const startYear = now.getFullYear();
+  const startMonth = now.getMonth();
+
+  const baselineSchedule = generateBaselineProjection(
+    context.loans,
+    startYear,
+    startMonth,
+    600, // max 50 years
+  );
+
+  const strategySchedule = generateStrategyProjection(
+    context.loans,
+    context.simulation.strategy,
+    null, // null = fastest payoff (not payment reduction)
+    context.simulation.monthly_overpayment_limit,
+    false, // don't reinvest reduced payments in calculation service
+    startYear,
+    startMonth,
+  );
+
+  // Aggregate baseline metrics
   const totalPrincipal = context.loans.reduce(
     (sum, loan) => sum + loan.remaining_balance,
     0,
   );
-
-  const monthsCandidates = context.loans
-    .map((loan) => loan.term_months)
-    .filter((term) => Number.isFinite(term) && term > 0);
-
-  const monthsToPayoff = monthsCandidates.length
-    ? Math.max(...monthsCandidates)
-    : DEFAULT_BASELINE_MONTHS;
 
   const monthlyPaymentTotal = context.loans.reduce(
     (sum, loan) =>
@@ -276,63 +301,48 @@ export const computeBaselineSchedule = (
     0,
   );
 
-  const totalInterest = Math.max(
+  const baselineMonths = baselineSchedule.length;
+  const baselineTotalInterest = baselineSchedule.reduce(
+    (sum, entry) => sum + entry.interest,
     0,
-    monthlyPaymentTotal * monthsToPayoff - totalPrincipal,
   );
 
-  return {
-    monthsToPayoff,
+  const baseline: BaselineSchedule = {
+    monthsToPayoff: baselineMonths,
     monthlyPaymentTotal,
-    totalInterest,
+    totalInterest: baselineTotalInterest,
     totalPrincipal,
   };
-};
 
-export const applyStrategy = (
-  context: SimulationComputationContext,
-  baseline: BaselineSchedule,
-): StrategyComputationResult => {
-  const reductionFactor =
-    STRATEGY_REDUCTION_MAP[context.simulation.strategy] ?? FALLBACK_REDUCTION;
-
-  if (baseline.monthsToPayoff <= 0) {
-    const projectedPayoffMonth = sharedComputeProjectedPayoffMonth(
-      context.simulation.started_at ?? context.simulation.created_at,
-      0,
-    );
-
-    return {
-      monthsToPayoff: 0,
-      monthlyPaymentTotal:
-        baseline.monthlyPaymentTotal +
-        context.simulation.monthly_overpayment_limit,
-      totalInterestSaved: 0,
-      projectedPayoffMonth,
-      reductionFactor,
-    };
-  }
-
-  const adjustedMonths = Math.max(
-    MIN_MONTHS,
-    Math.round(baseline.monthsToPayoff * (1 - reductionFactor)),
+  // Aggregate strategy metrics
+  const strategyMonths = strategySchedule.length;
+  const totalInterestWithStrategy = strategySchedule.reduce(
+    (sum, entry) => sum + entry.interest,
+    0,
+  );
+  const totalInterestSaved = Math.max(
+    0,
+    baselineTotalInterest - totalInterestWithStrategy,
   );
 
-  const totalInterestSaved = baseline.totalInterest * reductionFactor;
   const projectedPayoffMonth = sharedComputeProjectedPayoffMonth(
     context.simulation.started_at ?? context.simulation.created_at,
-    adjustedMonths,
+    strategyMonths,
   );
 
-  return {
-    monthsToPayoff: adjustedMonths,
+  const reductionFactor =
+    baselineMonths > 0 ? Math.max(0, 1 - strategyMonths / baselineMonths) : 0;
+
+  const strategy: StrategyComputationResult = {
+    monthsToPayoff: strategyMonths,
     monthlyPaymentTotal:
-      baseline.monthlyPaymentTotal +
-      context.simulation.monthly_overpayment_limit,
+      monthlyPaymentTotal + context.simulation.monthly_overpayment_limit,
     totalInterestSaved,
     projectedPayoffMonth,
     reductionFactor,
   };
+
+  return { baseline, strategy };
 };
 
 export const aggregateMetrics = (
@@ -552,8 +562,8 @@ export const computeAndPersist = async (
       return;
     }
 
-    const baseline = computeBaselineSchedule(context);
-    const strategyResult = applyStrategy(context, baseline);
+    const { baseline, strategy: strategyResult } =
+      computeSimulationMetrics(context);
     const metrics = aggregateMetrics(baseline, strategyResult);
     const snapshots = buildLoanSnapshots(context, strategyResult);
 
@@ -585,42 +595,4 @@ export const computeAndPersist = async (
       );
     }
   }
-};
-
-export const generateProjectionTimeline = (
-  simulationContext: SimulationComputationContext,
-  options?: { maxMonths?: number; now?: Date },
-): {
-  month: string;
-  principal: number;
-  interest: number;
-  remaining: number;
-}[] => {
-  const maxMonths = options?.maxMonths || 120;
-  const now = options?.now || new Date();
-  const startYear = now.getFullYear();
-  const startMonth = now.getMonth();
-
-  if (simulationContext.loans.length === 0) return [];
-
-  // Use shared baseline projection with overpayment split evenly
-  const additionalPaymentPerLoan =
-    simulationContext.simulation.monthly_overpayment_limit /
-    simulationContext.loans.length;
-
-  const projection = generateBaselineProjection(
-    simulationContext.loans,
-    startYear,
-    startMonth,
-    maxMonths,
-    additionalPaymentPerLoan,
-  );
-
-  // Map to expected return format
-  return projection.map((entry) => ({
-    month: entry.month,
-    principal: entry.principal,
-    interest: entry.interest,
-    remaining: entry.remaining,
-  }));
 };

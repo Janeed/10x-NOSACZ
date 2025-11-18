@@ -8,10 +8,8 @@ import type {
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
 import {
-  normalizeAnnualRate,
-  isoMonthString,
-  deriveStandardMonthlyPayment,
   generateBaselineProjection,
+  generateStrategyProjection,
 } from "./simulationSharedService.ts";
 
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
@@ -34,197 +32,8 @@ export interface MonthlyProjectionEntry {
 const DEFAULT_MAX_MONTHS = 600; // 50 years
 
 // generateMultiLoanBaseline is now replaced by shared generateBaselineProjection
-
-const generateMultiLoanProjected = (
-  loans: LoanRow[],
-  strategy: string,
-  paymentReductionTarget: number | null,
-  monthlyOverpaymentLimit: number,
-  reinvestReducedPayments: boolean,
-  startYear: number,
-  startMonth: number,
-): {
-  month: string;
-  interest: number;
-  remaining: number;
-  loanData: {
-    loanId: string;
-    loanAmount: number;
-    interest: number;
-    remaining: number;
-  }[];
-}[] => {
-  const schedule: {
-    month: string;
-    interest: number;
-    remaining: number;
-    loanData: {
-      loanId: string;
-      loanAmount: number;
-      interest: number;
-      remaining: number;
-    }[];
-  }[] = [];
-  let year = startYear;
-  let month = startMonth;
-  const balances = loans.map((loan) => loan.remaining_balance);
-  const firstMonthPayments = loans.map((loan) => {
-    return deriveStandardMonthlyPayment(
-      loan.remaining_balance,
-      loan.annual_rate,
-      loan.term_months,
-    );
-  });
-  let monthCount = 0;
-  let monthlyReducedPaymentsTotal = 0;
-
-  // For fastest_payoff, continue until all loans are paid off
-  // For payment_reduction, we still need to show the full amortization
-  // The maxMonths cap prevents infinite loops
-  while (balances.some((b) => b > 0.01) || monthCount < 1) {
-    const monthStr = isoMonthString(year, month);
-    let totalInterest = 0;
-    let totalRemaining = 0;
-    const loanData: {
-      loanId: string;
-      loanAmount: number;
-      interest: number;
-      remaining: number;
-      payment: number;
-    }[] = [];
-
-    // Allocate overpayment
-    const overpaymentAllocation = allocateOverpayment(
-      loans,
-      strategy,
-      monthlyOverpaymentLimit +
-        (reinvestReducedPayments ? monthlyReducedPaymentsTotal : 0),
-    );
-
-    for (let i = 0; i < loans.length; i++) {
-      if (balances[i] <= 0) continue;
-      const loan = loans[i];
-      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-      const standardPayment = deriveStandardMonthlyPayment(
-        loan.remaining_balance,
-        loan.annual_rate,
-        loan.term_months,
-      );
-      const totalPayment = standardPayment + overpaymentAllocation[i];
-
-      const interest = balances[i] * monthlyRate;
-      const principal = Math.min(totalPayment - interest, balances[i]);
-      balances[i] -= principal;
-      totalInterest += interest;
-      totalRemaining += Math.max(0, balances[i]);
-
-      loanData.push({
-        loanId: loan.id,
-        loanAmount: loan.principal,
-        interest,
-        remaining: Math.max(0, balances[i]),
-        payment: principal,
-      });
-    }
-
-    schedule.push({
-      month: monthStr,
-      interest: totalInterest,
-      remaining: totalRemaining,
-      loanData,
-    });
-
-    if (month || year) {
-      monthlyReducedPaymentsTotal = loanData.reduce(
-        (sum, loan, index) => sum + (firstMonthPayments[index] - loan.payment),
-        0,
-      );
-    }
-
-    if (paymentReductionTarget !== null && strategy === "payment_reduction") {
-      const currentMonthlyPayments = loanData.reduce(
-        (sum, loan) => sum + loan.payment,
-        0,
-      );
-
-      if (currentMonthlyPayments <= paymentReductionTarget) {
-        break;
-      }
-    }
-
-    month++;
-    if (month >= 12) {
-      month = 0;
-      year++;
-    }
-    monthCount++;
-  }
-
-  return schedule;
-};
-
-const allocateOverpayment = (
-  loans: LoanRow[],
-  strategy: string,
-  overpayment: number,
-): number[] => {
-  if (overpayment <= 0) return new Array(loans.length).fill(0);
-
-  switch (strategy) {
-    case "avalanche":
-      // Sort by rate descending
-      const sortedAvalanche = loans
-        .map((loan, index) => ({ loan, index, rate: loan.annual_rate }))
-        .sort((a, b) => b.rate - a.rate);
-      const allocation = new Array(loans.length).fill(0);
-      let remaining = overpayment;
-      for (const item of sortedAvalanche) {
-        if (remaining <= 0) break;
-        allocation[item.index] = Math.min(
-          remaining,
-          overpayment / loans.length,
-        ); // Simplified equal for now
-        remaining -= allocation[item.index];
-      }
-      return allocation;
-
-    case "snowball":
-      // Sort by balance ascending
-      const sortedSnowball = loans
-        .map((loan, index) => ({
-          loan,
-          index,
-          balance: loan.remaining_balance,
-        }))
-        .sort((a, b) => a.balance - b.balance);
-      const allocationSnow = new Array(loans.length).fill(0);
-      let remainingSnow = overpayment;
-      for (const item of sortedSnowball) {
-        if (remainingSnow <= 0) break;
-        allocationSnow[item.index] = Math.min(
-          remainingSnow,
-          overpayment / loans.length,
-        );
-        remainingSnow -= allocationSnow[item.index];
-      }
-      return allocationSnow;
-
-    case "equal":
-    default:
-      return new Array(loans.length).fill(overpayment / loans.length);
-
-    case "ratio":
-      // Proportional to interest
-      const interests = loans.map(
-        (loan) =>
-          loan.remaining_balance * (normalizeAnnualRate(loan.annual_rate) / 12),
-      );
-      const totalInterest = interests.reduce((sum, i) => sum + i, 0);
-      if (totalInterest === 0)
-        return new Array(loans.length).fill(overpayment / loans.length);
-      return interests.map((i) => (i / totalInterest) * overpayment);
-  }
-};
+// generateMultiLoanProjected is now replaced by shared generateStrategyProjection
+// allocateOverpayment is now in shared service
 
 const fetchLoans = async (
   supabase: Supabase,
@@ -294,7 +103,7 @@ export const buildMonthlyProjectionSeries = async (
     startMonth,
     options?.maxMonths ?? DEFAULT_MAX_MONTHS,
   );
-  const projectedSchedule = generateMultiLoanProjected(
+  const projectedSchedule = generateStrategyProjection(
     loans,
     simulation.strategy,
     simulation.paymentReductionTarget,
@@ -302,6 +111,7 @@ export const buildMonthlyProjectionSeries = async (
     userSettings?.reinvest_reduced_payments || false,
     startYear,
     startMonth,
+    options?.maxMonths ?? DEFAULT_MAX_MONTHS,
   );
 
   // Aggregate per month with per-loan data

@@ -291,3 +291,240 @@ export const generateBaselineProjection = (
 
   return schedule;
 };
+
+/**
+ * Allocates overpayment across multiple loans based on selected strategy.
+ *
+ * @param loans - Array of loans to allocate overpayment to
+ * @param strategy - Payment strategy: 'avalanche', 'snowball', 'equal', 'ratio'
+ * @param overpayment - Total overpayment amount to distribute
+ * @returns Array of overpayment amounts per loan (same order as input)
+ *
+ * @example
+ * const allocation = allocateOverpayment(loans, 'avalanche', 500);
+ * // Returns [300, 200, 0] if first two loans have highest rates
+ */
+export const allocateOverpayment = (
+  loans: ProjectionLoan[],
+  strategy: string,
+  overpayment: number,
+): number[] => {
+  if (overpayment <= 0) return new Array(loans.length).fill(0);
+
+  switch (strategy) {
+    case "avalanche":
+      // Sort by rate descending - pay highest interest first
+      const sortedAvalanche = loans
+        .map((loan, index) => ({ loan, index, rate: loan.annual_rate }))
+        .sort((a, b) => b.rate - a.rate);
+      const allocation = new Array(loans.length).fill(0);
+      let remaining = overpayment;
+      for (const item of sortedAvalanche) {
+        if (remaining <= 0) break;
+        allocation[item.index] = Math.min(
+          remaining,
+          overpayment / loans.length,
+        );
+        remaining -= allocation[item.index];
+      }
+      return allocation;
+
+    case "snowball":
+      // Sort by balance ascending - pay smallest balance first
+      const sortedSnowball = loans
+        .map((loan, index) => ({
+          loan,
+          index,
+          balance: loan.remaining_balance,
+        }))
+        .sort((a, b) => a.balance - b.balance);
+      const allocationSnow = new Array(loans.length).fill(0);
+      let remainingSnow = overpayment;
+      for (const item of sortedSnowball) {
+        if (remainingSnow <= 0) break;
+        allocationSnow[item.index] = Math.min(
+          remainingSnow,
+          overpayment / loans.length,
+        );
+        remainingSnow -= allocationSnow[item.index];
+      }
+      return allocationSnow;
+
+    case "equal":
+    default:
+      // Split overpayment equally across all loans
+      return new Array(loans.length).fill(overpayment / loans.length);
+
+    case "ratio":
+      // Proportional to monthly interest - more interest = more overpayment
+      const interests = loans.map(
+        (loan) =>
+          loan.remaining_balance * (normalizeAnnualRate(loan.annual_rate) / 12),
+      );
+      const totalInterest = interests.reduce((sum, i) => sum + i, 0);
+      if (totalInterest === 0)
+        return new Array(loans.length).fill(overpayment / loans.length);
+      return interests.map((i) => (i / totalInterest) * overpayment);
+  }
+};
+
+/**
+ * Generates a month-by-month projection with strategy-based overpayments.
+ * This is the advanced projection that applies payment strategies and can model
+ * payment reduction goals or fastest payoff scenarios.
+ *
+ * @param loans - Array of loans to project
+ * @param strategy - Payment strategy: 'avalanche', 'snowball', 'equal', 'ratio'
+ * @param paymentReductionTarget - Target monthly payment (null for fastest payoff)
+ * @param monthlyOverpaymentLimit - Maximum additional payment per month
+ * @param reinvestReducedPayments - Whether to reinvest saved payments
+ * @param startYear - Starting year for projection
+ * @param startMonth - Starting month (0-indexed)
+ * @param maxMonths - Maximum months to project (default: 600)
+ * @returns Array of monthly projection data with strategy applied
+ *
+ * @example
+ * const projection = generateStrategyProjection(
+ *   loans, 'avalanche', null, 500, false, 2025, 0
+ * );
+ */
+export const generateStrategyProjection = (
+  loans: ProjectionLoan[],
+  strategy: string,
+  paymentReductionTarget: number | null,
+  monthlyOverpaymentLimit: number,
+  reinvestReducedPayments: boolean,
+  startYear: number,
+  startMonth: number,
+  maxMonths = 600,
+): {
+  month: string;
+  interest: number;
+  principal: number;
+  remaining: number;
+  loanData: {
+    loanId: string;
+    loanAmount: number;
+    interest: number;
+    principal: number;
+    remaining: number;
+  }[];
+}[] => {
+  const schedule: {
+    month: string;
+    interest: number;
+    principal: number;
+    remaining: number;
+    loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      principal: number;
+      remaining: number;
+    }[];
+  }[] = [];
+
+  let year = startYear;
+  let month = startMonth;
+  const balances = loans.map((loan) => loan.remaining_balance);
+  const firstMonthPayments = loans.map((loan) => {
+    return deriveStandardMonthlyPayment(
+      loan.remaining_balance,
+      loan.annual_rate,
+      loan.term_months,
+    );
+  });
+  let monthCount = 0;
+  let monthlyReducedPaymentsTotal = 0;
+
+  // Continue until all loans are paid off or maxMonths reached
+  while (
+    (balances.some((b) => b > 0.01) || monthCount < 1) &&
+    monthCount < maxMonths
+  ) {
+    const monthStr = isoMonthString(year, month);
+    let totalInterest = 0;
+    let totalPrincipal = 0;
+    let totalRemaining = 0;
+    const loanData: {
+      loanId: string;
+      loanAmount: number;
+      interest: number;
+      principal: number;
+      remaining: number;
+    }[] = [];
+
+    // Allocate overpayment based on strategy
+    const overpaymentAllocation = allocateOverpayment(
+      loans,
+      strategy,
+      monthlyOverpaymentLimit +
+        (reinvestReducedPayments ? monthlyReducedPaymentsTotal : 0),
+    );
+
+    for (let i = 0; i < loans.length; i++) {
+      if (balances[i] <= 0) continue;
+
+      const loan = loans[i];
+      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
+      const standardPayment = deriveStandardMonthlyPayment(
+        loan.remaining_balance,
+        loan.annual_rate,
+        loan.term_months,
+      );
+      const totalPayment = standardPayment + overpaymentAllocation[i];
+
+      const interest = balances[i] * monthlyRate;
+      const principal = Math.min(totalPayment - interest, balances[i]);
+
+      balances[i] -= principal;
+      totalInterest += interest;
+      totalPrincipal += principal;
+      totalRemaining += Math.max(0, balances[i]);
+
+      loanData.push({
+        loanId: loan.id,
+        loanAmount: loan.principal,
+        interest,
+        principal,
+        remaining: Math.max(0, balances[i]),
+      });
+    }
+
+    schedule.push({
+      month: monthStr,
+      interest: totalInterest,
+      principal: totalPrincipal,
+      remaining: totalRemaining,
+      loanData,
+    });
+
+    // Calculate reduced payments for reinvestment
+    if (monthCount > 0) {
+      monthlyReducedPaymentsTotal = loanData.reduce(
+        (sum, loan, index) =>
+          sum + (firstMonthPayments[index] - loan.principal),
+        0,
+      );
+    }
+
+    // Check if payment reduction target is met
+    if (paymentReductionTarget !== null && strategy === "payment_reduction") {
+      const currentMonthlyPayments = loanData.reduce(
+        (sum, loan) => sum + loan.principal,
+        0,
+      );
+
+      if (currentMonthlyPayments <= paymentReductionTarget) {
+        break;
+      }
+    }
+
+    const next = incrementMonth(year, month);
+    year = next.year;
+    month = next.month;
+    monthCount++;
+  }
+
+  return schedule;
+};
