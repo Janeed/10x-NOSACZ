@@ -6,8 +6,8 @@ interface InterestVsSavedChartProps {
   readonly points: ChartInterestPointVM[] | undefined;
 }
 
-const SVG_WIDTH = 640;
-const SVG_HEIGHT = 240;
+const SVG_WIDTH = 800;
+const SVG_HEIGHT = 400;
 const PADDING_LEFT = 80;
 const PADDING_RIGHT = 20;
 const PADDING_TOP = 20;
@@ -118,7 +118,7 @@ export function InterestVsSavedChart({ points }: InterestVsSavedChartProps) {
     <svg
       role="img"
       viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-      className="h-60 w-full"
+      className="h-auto w-full"
     >
       <title>Monthly interest versus interest saved</title>
       <desc>

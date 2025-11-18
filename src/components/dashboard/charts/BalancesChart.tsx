@@ -6,8 +6,8 @@ interface BalancesChartProps {
   readonly points: ChartBalancePointVM[] | undefined;
 }
 
-const SVG_WIDTH = 640;
-const SVG_HEIGHT = 240;
+const SVG_WIDTH = 800;
+const SVG_HEIGHT = 400;
 const PADDING_LEFT = 80;
 const PADDING_RIGHT = 20;
 const PADDING_TOP = 20;
@@ -115,7 +115,7 @@ export function BalancesChart({ points }: BalancesChartProps) {
     <svg
       role="img"
       viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-      className="h-60 w-full"
+      className="h-auto w-full"
     >
       <title>Remaining balance trend over upcoming months</title>
       <desc>

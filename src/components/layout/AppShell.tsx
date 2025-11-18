@@ -118,10 +118,6 @@ export function AppShell({
             );
           })}
         </nav>
-
-        <div className="border-t border-sidebar-border/60 px-3 py-3 text-xs text-sidebar-foreground/60">
-          {title ? <p className="truncate">{title}</p> : null}
-        </div>
       </aside>
 
       <div className="flex flex-1 flex-col">
