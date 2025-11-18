@@ -7,6 +7,12 @@ import type {
   ActiveSimulationSummary,
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
+import {
+  normalizeAnnualRate,
+  isoMonthString,
+  deriveStandardMonthlyPayment,
+  incrementMonth,
+} from "./simulationSharedService.ts";
 
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
 type UserSettingsRow = Database["public"]["Tables"]["user_settings"]["Row"];
@@ -26,32 +32,6 @@ export interface MonthlyProjectionEntry {
 }
 
 const DEFAULT_MAX_MONTHS = 600; // 50 years
-
-const isoMonthString = (year: number, monthIndex: number): string => {
-  const month = String(monthIndex + 1).padStart(2, "0");
-  return `${year}-${month}-01`;
-};
-
-const normalizeAnnualRate = (annualRate: number): number => {
-  if (!Number.isFinite(annualRate) || annualRate <= 0) {
-    return 0;
-  }
-  return annualRate > 1 ? annualRate / 100 : annualRate;
-};
-
-const deriveMonthlyPayment = (
-  principal: number,
-  annualRate: number,
-  termMonths: number,
-): number => {
-  const monthlyRate = normalizeAnnualRate(annualRate) / 12;
-  if (monthlyRate === 0) {
-    return principal / termMonths;
-  }
-  return (
-    (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -termMonths))
-  );
-};
 
 const generateMultiLoanBaseline = (
   loans: LoanRow[],
@@ -99,7 +79,7 @@ const generateMultiLoanBaseline = (
       if (balances[i] <= 0) continue;
       const loan = loans[i];
       const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-      const standardPayment = deriveMonthlyPayment(
+      const standardPayment = deriveStandardMonthlyPayment(
         loan.remaining_balance,
         loan.annual_rate,
         loan.term_months,
@@ -125,11 +105,9 @@ const generateMultiLoanBaseline = (
       loanData,
     });
 
-    month++;
-    if (month >= 12) {
-      month = 0;
-      year++;
-    }
+    const next = incrementMonth(year, month);
+    year = next.year;
+    month = next.month;
     monthCount++;
   }
 
@@ -170,7 +148,7 @@ const generateMultiLoanProjected = (
   let month = startMonth;
   const balances = loans.map((loan) => loan.remaining_balance);
   const firstMonthPayments = loans.map((loan) => {
-    return deriveMonthlyPayment(
+    return deriveStandardMonthlyPayment(
       loan.remaining_balance,
       loan.annual_rate,
       loan.term_months,
@@ -206,7 +184,7 @@ const generateMultiLoanProjected = (
       if (balances[i] <= 0) continue;
       const loan = loans[i];
       const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
-      const standardPayment = deriveMonthlyPayment(
+      const standardPayment = deriveStandardMonthlyPayment(
         loan.remaining_balance,
         loan.annual_rate,
         loan.term_months,

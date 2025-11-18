@@ -3,6 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../../db/database.types.ts";
 import type { SimulationStatus } from "../../types.ts";
 import { logger } from "../logger.ts";
+import {
+  normalizeAnnualRate,
+  isoMonthStringByYearMonth as sharedIsoMonthStringByYearMonth,
+  computeProjectedPayoffMonth as sharedComputeProjectedPayoffMonth,
+} from "./simulationSharedService.ts";
 
 type SimulationRow = Database["public"]["Tables"]["simulations"]["Row"];
 type LoanRow = Database["public"]["Tables"]["loans"]["Row"];
@@ -87,49 +92,18 @@ const captureErrorDetails = (
   };
 };
 
-const isoMonthString = (date: Date): string => date.toISOString().split("T")[0];
-
-const isoMonthStringByYearMonth = (year: number, month: number): string => {
-  const date = new Date(year, month, 1);
-  return isoMonthString(date);
-};
-
-const normalizeAnnualRate = (annualRate: number): number => {
-  if (!Number.isFinite(annualRate) || annualRate <= 0) {
-    return 0;
-  }
-
-  return annualRate > 1 ? annualRate / 100 : annualRate;
-};
+// Date and month utilities are now imported from simulationSharedService
 
 const deriveMonthlyPayment = (loan: LoanRow): number => {
   const normalizedRate = normalizeAnnualRate(loan.annual_rate);
   if (normalizedRate === 0) {
-    const divisor =
-      loan.term_months > 0 ? loan.term_months : DEFAULT_BASELINE_MONTHS;
-    return loan.remaining_balance / divisor;
+    /* Lines 108-111 omitted */
   }
 
   return loan.remaining_balance * (normalizedRate / 12);
 };
 
-const computeProjectedPayoffMonth = (
-  startIso: string | null,
-  monthsToPayoff: number,
-): string => {
-  const reference = startIso ? new Date(startIso) : new Date();
-  if (Number.isNaN(reference.getTime())) {
-    return isoMonthString(new Date());
-  }
-
-  const base = new Date(reference.getFullYear(), reference.getMonth(), 1);
-  const projected = new Date(
-    base.getFullYear(),
-    base.getMonth() + monthsToPayoff,
-    1,
-  );
-  return isoMonthString(projected);
-};
+// computeProjectedPayoffMonth is now imported from simulationSharedService
 
 export const scheduleSimulationComputation = (
   supabase: Supabase,
@@ -326,7 +300,7 @@ export const applyStrategy = (
     STRATEGY_REDUCTION_MAP[context.simulation.strategy] ?? FALLBACK_REDUCTION;
 
   if (baseline.monthsToPayoff <= 0) {
-    const projectedPayoffMonth = computeProjectedPayoffMonth(
+    const projectedPayoffMonth = sharedComputeProjectedPayoffMonth(
       context.simulation.started_at ?? context.simulation.created_at,
       0,
     );
@@ -348,7 +322,7 @@ export const applyStrategy = (
   );
 
   const totalInterestSaved = baseline.totalInterest * reductionFactor;
-  const projectedPayoffMonth = computeProjectedPayoffMonth(
+  const projectedPayoffMonth = sharedComputeProjectedPayoffMonth(
     context.simulation.started_at ?? context.simulation.created_at,
     adjustedMonths,
   );
@@ -385,7 +359,7 @@ export const buildLoanSnapshots = (
     return [];
   }
 
-  const fallbackStartMonth = computeProjectedPayoffMonth(
+  const fallbackStartMonth = sharedComputeProjectedPayoffMonth(
     context.simulation.started_at ?? context.simulation.created_at,
     0,
   );
@@ -647,7 +621,7 @@ export const generateProjectionTimeline = (
   let monthCount = 0;
 
   while (balances.some((b) => b > 0.01) && monthCount < maxMonths) {
-    const monthStr = isoMonthStringByYearMonth(year, month);
+    const monthStr = sharedIsoMonthStringByYearMonth(year, month + 1);
     let totalPrincipal = 0;
     let totalInterest = 0;
     let totalRemaining = 0;
