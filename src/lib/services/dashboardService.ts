@@ -9,11 +9,13 @@ import type {
   DashboardOverviewAdherence,
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
+import { ActiveSimulationNotFoundError } from "../errors.ts";
 import { logger } from "../logger.ts";
 import {
   computeLoanMetrics,
   buildAdherenceMetrics,
 } from "./dashboardCalculationsService.ts";
+import { buildMonthlyProjectionSeries } from "./simulationProjectionService";
 import type { DashboardIncludeOptions } from "../validation/dashboard.ts";
 
 const CACHE_TTL_MS = 300_000; // 5 minutes
@@ -302,7 +304,7 @@ export const getDashboardOverview = async (
     validatedUserId,
   );
   if (!activeSimulation) {
-    throw new (await import("../errors")).ActiveSimulationNotFoundError();
+    throw new ActiveSimulationNotFoundError();
   }
 
   const loans = await fetchLoans(validatedSupabase, validatedUserId);
@@ -315,24 +317,18 @@ export const getDashboardOverview = async (
   );
 
   let graphs: DashboardOverviewGraphData | undefined;
-  if (include.monthlyTrend) {
+  if (include.monthlyTrend || include.interestBreakdown) {
+    const projectionSeries = await buildMonthlyProjectionSeries(
+      validatedSupabase,
+      validatedUserId,
+      activeSimulation,
+      { now: options?.now },
+    );
     graphs = {
       ...graphs,
-      monthlyBalances: await fetchGraphMonthlyBalances(
-        validatedSupabase,
-        validatedUserId,
-      ),
-    } satisfies DashboardOverviewGraphData;
-  }
-
-  if (include.interestBreakdown) {
-    graphs = {
-      ...graphs,
-      interestVsSaved: await fetchGraphInterestVsSaved(
-        validatedSupabase,
-        validatedUserId,
-      ),
-    } satisfies DashboardOverviewGraphData;
+      ...(include.monthlyTrend ? { monthlyBalances: projectionSeries.monthlyBalances } : {}),
+      ...(include.interestBreakdown ? { interestVsSaved: projectionSeries.interestVsSaved } : {}),
+    };
   }
 
   const adherence = include.adherence

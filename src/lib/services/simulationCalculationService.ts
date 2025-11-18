@@ -89,6 +89,11 @@ const captureErrorDetails = (
 
 const isoMonthString = (date: Date): string => date.toISOString().split("T")[0];
 
+const isoMonthStringByYearMonth = (year: number, month: number): string => {
+  const date = new Date(year, month, 1);
+  return isoMonthString(date);
+}
+
 const normalizeAnnualRate = (annualRate: number): number => {
   if (!Number.isFinite(annualRate) || annualRate <= 0) {
     return 0;
@@ -609,4 +614,62 @@ export const computeAndPersist = async (
       );
     }
   }
+};
+
+export const generateProjectionTimeline = (
+  simulationContext: SimulationComputationContext,
+  options?: { maxMonths?: number; now?: Date },
+): { month: string; principal: number; interest: number; remaining: number }[] => {
+  // Implement per-month projection timeline mirroring simulation logic
+  const maxMonths = options?.maxMonths || 120;
+  const now = options?.now || new Date();
+  const startYear = now.getFullYear();
+  const startMonth = now.getMonth();
+
+  const loans = simulationContext.loans;
+  if (loans.length === 0) return [];
+
+  // Simplified multi-loan projection
+  const schedule: { month: string; principal: number; interest: number; remaining: number }[] = [];
+  let year = startYear;
+  let month = startMonth;
+  let balances = loans.map(loan => loan.remaining_balance);
+  let monthCount = 0;
+
+  while (balances.some(b => b > 0.01) && monthCount < maxMonths) {
+    const monthStr = isoMonthStringByYearMonth(year, month);
+    let totalPrincipal = 0;
+    let totalInterest = 0;
+    let totalRemaining = 0;
+
+    for (let i = 0; i < loans.length; i++) {
+      if (balances[i] <= 0) continue;
+      const loan = loans[i];
+      const monthlyRate = normalizeAnnualRate(loan.annual_rate) / 12;
+      const standardPayment = deriveMonthlyPayment(loan);
+      const totalPayment = standardPayment + (simulationContext.simulation.monthly_overpayment_limit / loans.length); // Simplified
+      const interest = balances[i] * monthlyRate;
+      const principal = Math.min(totalPayment - interest, balances[i]);
+      balances[i] -= principal;
+      totalPrincipal += principal;
+      totalInterest += interest;
+      totalRemaining += Math.max(0, balances[i]);
+    }
+
+    schedule.push({
+      month: monthStr,
+      principal: totalPrincipal,
+      interest: totalInterest,
+      remaining: totalRemaining,
+    });
+
+    month++;
+    if (month >= 12) {
+      month = 0;
+      year++;
+    }
+    monthCount++;
+  }
+
+  return schedule;
 };

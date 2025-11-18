@@ -32,9 +32,9 @@ export function ChartsSection({
     const first = balancePoints[0];
     const last = balancePoints[balancePoints.length - 1];
     const delta = last.totalRemaining - first.totalRemaining;
-    const formatter = new Intl.NumberFormat("en-US", {
+    const formatter = new Intl.NumberFormat("pl-PL", {
       style: "currency",
-      currency: "USD",
+      currency: "PLN",
       maximumFractionDigits: 0,
     });
 
@@ -47,9 +47,9 @@ export function ChartsSection({
       return null;
     }
 
-    const formatter = new Intl.NumberFormat("en-US", {
+    const formatter = new Intl.NumberFormat("pl-PL", {
       style: "currency",
-      currency: "USD",
+      currency: "PLN",
       maximumFractionDigits: 0,
     });
 
@@ -65,7 +65,7 @@ export function ChartsSection({
   }, [interestPoints]);
 
   return (
-    <section className="grid gap-6 lg:grid-cols-2">
+    <section className="grid gap-6">
       <ChartCard
         title="Remaining balance"
         description={
