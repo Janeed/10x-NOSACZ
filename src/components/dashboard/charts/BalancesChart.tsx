@@ -14,7 +14,18 @@ const PADDING_TOP = 20;
 const PADDING_BOTTOM = 40;
 const CHART_WIDTH = SVG_WIDTH - PADDING_LEFT - PADDING_RIGHT;
 const CHART_HEIGHT = SVG_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
-const BALANCE_COLOR = "#2563eb";
+
+// Color palette for different loans
+const LOAN_COLORS = [
+  "#2563eb", // blue
+  "#10b981", // emerald
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#06b6d4", // cyan
+  "#f97316", // orange
+];
 
 const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
@@ -39,36 +50,66 @@ export function BalancesChart({ points }: BalancesChartProps) {
       return null;
     }
 
-    const normalized = points.map((point) => {
-      return {
-        month: point.month,
-        label: formatMonthLabel(point.month),
-        shortLabel: formatMonthLabel(point.month, true),
-        value: Number(point.totalRemaining ?? 0),
-      };
+    // Extract all unique loan IDs
+    const allLoanIds = new Set<string>();
+    points.forEach(point => {
+      point.loans?.forEach(loan => allLoanIds.add(loan.loanId));
     });
+    const loanIds = Array.from(allLoanIds);
 
-    const values = normalized.map((point) => point.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    // Find global min/max across all loans
+    let minValue = Infinity;
+    let maxValue = 0;
+    points.forEach(point => {
+      const totalRemaining = point.totalRemaining || 0;
+      if (totalRemaining > 0) {
+        maxValue = Math.max(maxValue, totalRemaining);
+      }
+      point.loans?.forEach(loan => {
+        if (loan.remaining > 0) {
+          minValue = Math.min(minValue, loan.remaining);
+          maxValue = Math.max(maxValue, loan.remaining);
+        }
+      });
+    });
+    if (minValue === Infinity) minValue = 0;
     const range = maxValue - minValue || 1;
 
-    const stepX =
-      normalized.length > 1 ? CHART_WIDTH / (normalized.length - 1) : 0;
+    const stepX = points.length > 1 ? CHART_WIDTH / (points.length - 1) : 0;
 
-    const coordinates = normalized.map((point, index) => {
-      const x = PADDING_LEFT + index * stepX;
-      const percent = (point.value - minValue) / range;
-      const y = PADDING_TOP + CHART_HEIGHT - percent * CHART_HEIGHT;
-      return {
-        x,
-        y,
-        month: point.month,
-        label: point.label,
-        shortLabel: point.shortLabel,
-        value: point.value,
-      };
+    // Build coordinates for each loan
+    const loanLines: Record<string, Array<{ x: number; y: number; value: number; month: string; label: string }>> = {};
+    loanIds.forEach(loanId => {
+      loanLines[loanId] = [];
     });
+
+    points.forEach((point, index) => {
+      const x = PADDING_LEFT + index * stepX;
+      point.loans?.forEach(loan => {
+        const percent = (loan.remaining - minValue) / range;
+        const y = PADDING_TOP + CHART_HEIGHT - percent * CHART_HEIGHT;
+        loanLines[loan.loanId].push({
+          x,
+          y,
+          value: loan.remaining,
+          month: point.month,
+          label: formatMonthLabel(point.month),
+        });
+      });
+    });
+
+    // Build path strings for each loan
+    const loanPaths = loanIds.map((loanId, index) => {
+      const coords = loanLines[loanId];
+      if (coords.length === 0) return null;
+      const pathString = coords.map(c => `${c.x},${c.y}`).join(" ");
+      return {
+        loanId,
+        color: LOAN_COLORS[index % LOAN_COLORS.length],
+        pathString,
+        coordinates: coords,
+      };
+    }).filter(Boolean);
 
     // Y-axis ticks (7 values)
     const yTicks = Array.from({ length: 7 }, (_, i) => {
@@ -77,33 +118,21 @@ export function BalancesChart({ points }: BalancesChartProps) {
       return { value, y };
     });
 
-    // X-axis ticks (show every nth month to avoid crowding)
-    const xTickInterval = Math.max(1, Math.floor(normalized.length / 7));
-    const xTicks = normalized
+    // X-axis ticks
+    const xTickInterval = Math.max(1, Math.floor(points.length / 7));
+    const xTicks = points
       .map((point, index) => ({
         index,
         x: PADDING_LEFT + index * stepX,
-        label: point.shortLabel,
+        label: formatMonthLabel(point.month, true),
       }))
-      .filter((_, i) => i % xTickInterval === 0 || i === normalized.length - 1);
-
-    const linePoints = coordinates
-      .map((point) => `${point.x},${point.y}`)
-      .join(" ");
-    const lastCoordinate = coordinates[coordinates.length - 1];
-    const firstCoordinate = coordinates[0];
-    const chartBottom = PADDING_TOP + CHART_HEIGHT;
-    const areaPoints = `${linePoints} ${lastCoordinate?.x ?? PADDING_LEFT},${chartBottom} ${firstCoordinate?.x ?? PADDING_LEFT},${chartBottom}`;
+      .filter((_, i) => i % xTickInterval === 0 || i === points.length - 1);
 
     return {
-      coordinates,
-      linePoints,
-      areaPoints,
+      loanPaths,
       yTicks,
       xTicks,
-      chartBottom,
-      minValue,
-      maxValue,
+      chartBottom: PADDING_TOP + CHART_HEIGHT,
     };
   }, [points]);
 
@@ -122,12 +151,6 @@ export function BalancesChart({ points }: BalancesChartProps) {
         Visualizes projected remaining balances for each month under the active
         strategy.
       </desc>
-      <defs>
-        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={BALANCE_COLOR} stopOpacity={0.25} />
-          <stop offset="100%" stopColor={BALANCE_COLOR} stopOpacity={0} />
-        </linearGradient>
-      </defs>
       
       {/* Y-axis */}
       <line
@@ -205,18 +228,30 @@ export function BalancesChart({ points }: BalancesChartProps) {
         </g>
       ))}
       
-      <polygon points={computed.areaPoints} fill="url(#balanceGradient)" />
-      <polyline
-        points={computed.linePoints}
-        fill="none"
-        stroke={BALANCE_COLOR}
-        strokeWidth={2}
-      />
-      {computed.coordinates.map((point, i) => (
-        <g key={i}>
-          <circle cx={point.x} cy={point.y} r={4} fill={BALANCE_COLOR}>
-            <title>{`${point.label}: ${currencyFormatter.format(point.value)}`}</title>
-          </circle>
+      {/* Draw a line for each loan */}
+      {computed.loanPaths.map((loanPath, index) => (
+        <g key={loanPath?.loanId || index}>
+          {loanPath && (
+            <>
+              <polyline
+                points={loanPath.pathString}
+                fill="none"
+                stroke={loanPath.color}
+                strokeWidth={2}
+              />
+              {loanPath.coordinates.map((point, i) => (
+                <circle
+                  key={i}
+                  cx={point.x}
+                  cy={point.y}
+                  r={4}
+                  fill={loanPath.color}
+                >
+                  <title>{`Pożyczka ${loanPath.loanId}: ${point.label} - ${currencyFormatter.format(point.value)}`}</title>
+                </circle>
+              ))}
+            </>
+          )}
         </g>
       ))}
     </svg>

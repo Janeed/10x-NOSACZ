@@ -98,8 +98,8 @@ const generateMultiLoanBaseline = (
   loans: LoanRow[],
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number }[] => {
-  const schedule: { month: string; interest: number; remaining: number }[] = [];
+): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] => {
+  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] = [];
   let year = startYear;
   let month = startMonth;
   let balances = loans.map(loan => loan.remaining_balance);
@@ -109,6 +109,7 @@ const generateMultiLoanBaseline = (
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
     let totalRemaining = 0;
+    const loanData: Array<{ loanId: string; interest: number; remaining: number }> = [];
 
     for (let i = 0; i < loans.length; i++) {
       if (balances[i] <= 0) continue;
@@ -124,12 +125,19 @@ const generateMultiLoanBaseline = (
       balances[i] -= principal;
       totalInterest += interest;
       totalRemaining += Math.max(0, balances[i]);
+      
+      loanData.push({
+        loanId: loan.id,
+        interest,
+        remaining: Math.max(0, balances[i]),
+      });
     }
 
     schedule.push({
       month: monthStr,
       interest: totalInterest,
       remaining: totalRemaining,
+      loanData,
     });
 
     month++;
@@ -151,8 +159,8 @@ const generateMultiLoanProjected = (
   reinvestReducedPayments: boolean,
   startYear: number,
   startMonth: number,
-): { month: string; interest: number; remaining: number }[] => {
-  const schedule: { month: string; interest: number; remaining: number }[] = [];
+): { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] => {
+  const schedule: { month: string; interest: number; remaining: number; loanData: Array<{ loanId: string; interest: number; remaining: number }> }[] = [];
   let year = startYear;
   let month = startMonth;
   let balances = loans.map(loan => loan.remaining_balance);
@@ -165,6 +173,7 @@ const generateMultiLoanProjected = (
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
     let totalRemaining = 0;
+    const loanData: Array<{ loanId: string; interest: number; remaining: number }> = [];
 
     // Calculate interest for all loans
     const interests = balances.map((balance, i) => {
@@ -191,12 +200,19 @@ const generateMultiLoanProjected = (
       balances[i] -= principal;
       totalInterest += interest;
       totalRemaining += Math.max(0, balances[i]);
+      
+      loanData.push({
+        loanId: loan.id,
+        interest,
+        remaining: Math.max(0, balances[i]),
+      });
     }
 
     schedule.push({
       month: monthStr,
       interest: totalInterest,
       remaining: totalRemaining,
+      loanData,
     });
 
     month++;
@@ -332,10 +348,16 @@ export const buildMonthlyProjectionSeries = async (
     startMonth,
   );
 
-  // Aggregate per month
+  // Aggregate per month with per-loan data
   const monthlyData: Record<
     string,
-    { totalRemaining: number; interest: number; baselineInterest: number }
+    { 
+      totalRemaining: number; 
+      interest: number; 
+      baselineInterest: number;
+      projectedLoans: Map<string, { remaining: number; interest: number }>;
+      baselineLoans: Map<string, { interest: number }>;
+    }
   > = {};
 
   // Process baseline
@@ -345,9 +367,18 @@ export const buildMonthlyProjectionSeries = async (
         totalRemaining: 0,
         interest: 0,
         baselineInterest: 0,
+        projectedLoans: new Map(),
+        baselineLoans: new Map(),
       };
     }
     monthlyData[entry.month].baselineInterest += entry.interest;
+    
+    // Store per-loan baseline data
+    for (const loanEntry of entry.loanData) {
+      monthlyData[entry.month].baselineLoans.set(loanEntry.loanId, {
+        interest: loanEntry.interest,
+      });
+    }
   }
 
   // Process projected
@@ -357,10 +388,20 @@ export const buildMonthlyProjectionSeries = async (
         totalRemaining: 0,
         interest: 0,
         baselineInterest: 0,
+        projectedLoans: new Map(),
+        baselineLoans: new Map(),
       };
     }
     monthlyData[entry.month].totalRemaining += entry.remaining;
     monthlyData[entry.month].interest += entry.interest;
+    
+    // Store per-loan projected data
+    for (const loanEntry of entry.loanData) {
+      monthlyData[entry.month].projectedLoans.set(loanEntry.loanId, {
+        remaining: loanEntry.remaining,
+        interest: loanEntry.interest,
+      });
+    }
   }
 
   const months = Object.keys(monthlyData).sort();
@@ -374,14 +415,36 @@ export const buildMonthlyProjectionSeries = async (
         break;
     }
 
+    // Build per-loan arrays for this month
+    const loanBalances: Array<{ loanId: string; remaining: number }> = [];
+    const loanInterests: Array<{ loanId: string; interest: number; interestSaved: number }> = [];
+    
+    data.projectedLoans.forEach((projectedData, loanId) => {
+      loanBalances.push({
+        loanId,
+        remaining: projectedData.remaining,
+      });
+      
+      const baselineData = data.baselineLoans.get(loanId);
+      const baselineInterest = baselineData?.interest || 0;
+      
+      loanInterests.push({
+        loanId,
+        interest: projectedData.interest,
+        interestSaved: Math.max(0, baselineInterest - projectedData.interest),
+      });
+    });
+
     monthlyBalances.push({
       month,
       totalRemaining: data.totalRemaining,
+      loans: loanBalances,
     });
     interestVsSaved.push({
       month,
       interest: data.interest,
       interestSaved: Math.max(0, data.baselineInterest - data.interest),
+      loans: loanInterests,
     });
   }
 

@@ -440,12 +440,21 @@ export interface DashboardOverviewCurrentMonth {
 export interface DashboardOverviewGraphMonthlyBalancePoint {
   month: MonthlyExecutionLogRow["month_start"];
   totalRemaining: number;
+  loans: Array<{
+    loanId: string;
+    remaining: number;
+  }>;
 }
 
 export interface DashboardOverviewGraphInterestPoint {
   month: MonthlyExecutionLogRow["month_start"];
   interest: number;
   interestSaved: number;
+  loans: Array<{
+    loanId: string;
+    interest: number;
+    interestSaved: number;
+  }>;
 }
 
 export interface DashboardOverviewGraphData {
