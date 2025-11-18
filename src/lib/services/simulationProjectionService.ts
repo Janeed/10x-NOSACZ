@@ -4,6 +4,7 @@ import type { Database } from "../../db/database.types.ts";
 import type {
   DashboardOverviewGraphMonthlyBalancePoint,
   DashboardOverviewGraphInterestPoint,
+  ActiveSimulationSummary,
 } from "../../types.ts";
 import { internalError } from "../errors.ts";
 import { logger } from "../logger.ts";
@@ -26,7 +27,7 @@ export interface MonthlyProjectionEntry {
   interestSaved: number;
 }
 
-const DEFAULT_MAX_MONTHS = 120;
+const DEFAULT_MAX_MONTHS = 600; // 50 years
 
 const isoMonthString = (year: number, monthIndex: number): string => {
   const month = String(monthIndex + 1).padStart(2, "0");
@@ -157,6 +158,9 @@ const generateMultiLoanProjected = (
   let balances = loans.map(loan => loan.remaining_balance);
   let monthCount = 0;
 
+  // For fastest_payoff, continue until all loans are paid off
+  // For payment_reduction, we still need to show the full amortization
+  // The maxMonths cap prevents infinite loops
   while (balances.some(b => b > 0.01) && monthCount < DEFAULT_MAX_MONTHS) {
     const monthStr = isoMonthString(year, month);
     let totalInterest = 0;
@@ -296,13 +300,12 @@ const fetchUserSettings = async (
 export const buildMonthlyProjectionSeries = async (
   supabase: Supabase,
   userId: string,
-  simulation: { strategy: string; goal: string },
+  simulation: ActiveSimulationSummary,
   options?: ProjectionOptions,
 ): Promise<{
   monthlyBalances: DashboardOverviewGraphMonthlyBalancePoint[];
   interestVsSaved: DashboardOverviewGraphInterestPoint[];
 }> => {
-  const maxMonths = options?.maxMonths || DEFAULT_MAX_MONTHS;
   const now = options?.now || new Date();
   const startYear = now.getFullYear();
   const startMonth = now.getMonth();
@@ -360,13 +363,17 @@ export const buildMonthlyProjectionSeries = async (
     monthlyData[entry.month].interest += entry.interest;
   }
 
-  // Build results
   const months = Object.keys(monthlyData).sort();
   const monthlyBalances: DashboardOverviewGraphMonthlyBalancePoint[] = [];
   const interestVsSaved: DashboardOverviewGraphInterestPoint[] = [];
-
-  for (const month of months.slice(0, maxMonths)) {
+  
+  for (const month of months) {
     const data = monthlyData[month];
+
+    if (data.totalRemaining <= 0){
+        break;
+    }
+
     monthlyBalances.push({
       month,
       totalRemaining: data.totalRemaining,
