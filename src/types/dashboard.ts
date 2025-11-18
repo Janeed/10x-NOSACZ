@@ -39,6 +39,7 @@ export interface DashboardLoanVM {
 export interface CurrentMonthEntryVM {
   readonly logId: string;
   readonly loanId: string;
+  readonly loanInitialAmount: number;
   readonly scheduledPayment: number;
   readonly scheduledOverpayment: number;
   readonly paymentStatus: PaymentStatus;

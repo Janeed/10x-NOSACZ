@@ -4,9 +4,9 @@ import { OverpaymentStatusControl } from "./OverpaymentStatusControl";
 import { SkipActionControl } from "./SkipActionControl";
 import type { CurrentMonthEntryVM } from "@/types/dashboard";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   minimumFractionDigits: 2,
 });
 
@@ -33,7 +33,7 @@ export function CurrentMonthRow({
       <td className="px-4 py-4 align-top">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-foreground">
-            Loan #{entry.loanId}
+            Loan ({entry.loanInitialAmount}zł left)
           </span>
           <LoanStatusBadge isClosed={entry.isClosed} />
         </div>

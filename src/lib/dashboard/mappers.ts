@@ -97,6 +97,7 @@ export const mapCurrentMonthEntryToViewModel = (
   return {
     logId,
     loanId: entry.loanId,
+    loanInitialAmount: loan?.remainingBalance ?? 0,
     scheduledPayment: entry.scheduledPayment,
     scheduledOverpayment,
     paymentStatus,

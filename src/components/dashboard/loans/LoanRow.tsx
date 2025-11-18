@@ -2,9 +2,9 @@ import type { DashboardLoanVM } from "@/types/dashboard";
 import { LoanProgressBar } from "./LoanProgressBar";
 import { LoanStatusBadge } from "./LoanStatusBadge";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   maximumFractionDigits: 0,
 });
 

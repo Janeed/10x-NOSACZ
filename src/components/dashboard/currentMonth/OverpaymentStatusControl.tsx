@@ -26,9 +26,9 @@ const STATUS_STYLES: Record<string, { label: string; className: string }> = {
 
 const normalizeStatus = (value: string) => value?.toLowerCase?.() ?? "unknown";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   minimumFractionDigits: 2,
 });
 

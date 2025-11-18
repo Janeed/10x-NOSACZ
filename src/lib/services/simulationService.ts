@@ -647,6 +647,24 @@ export const activateSimulation = async (
     ...(options?.requestId ? { requestId: options.requestId } : {}),
   });
 
+  // Create monthly execution logs for current month
+  const { ensureMonthlyExecutionLogs } = await import(
+    "./monthlyExecutionLogService.ts"
+  );
+  try {
+    await ensureMonthlyExecutionLogs(supabase, userId, {
+      requestId: options?.requestId,
+    });
+  } catch (error) {
+    logger.warn("simulation_activate", "Failed to create monthly execution logs", {
+      simulationId: id,
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+      ...(options?.requestId ? { requestId: options.requestId } : {}),
+    });
+    // Don't fail activation if log creation fails
+  }
+
   // Invalidate dashboard cache since active simulation changed
   invalidateDashboardCache(userId);
 

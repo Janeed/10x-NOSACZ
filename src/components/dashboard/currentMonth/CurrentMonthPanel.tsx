@@ -7,9 +7,9 @@ import type { CurrentMonthEntryVM } from "@/types/dashboard";
 import { ConfirmSkipDialog } from "./ConfirmSkipDialog";
 import { CurrentMonthCard, CurrentMonthRow } from "./CurrentMonthRow";
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   maximumFractionDigits: 0,
 });
 

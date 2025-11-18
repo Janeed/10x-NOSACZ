@@ -33,9 +33,9 @@ const formatInput = (value: number | "") => {
   return Number.isFinite(value) ? String(value) : "";
 };
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   maximumFractionDigits: 2,
 });
 

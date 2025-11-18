@@ -133,6 +133,7 @@ const fetchCurrentMonthSchedule = async (
     .from("monthly_execution_logs")
     .select(
       `
+      id,
       loan_id,
       interest_portion,
       principal_portion,
@@ -169,6 +170,7 @@ const fetchCurrentMonthSchedule = async (
   return {
     monthStart: data[0].month_start,
     entries: data.map((entry) => ({
+      logId: entry.id,
       loanId: entry.loan_id,
       scheduledPayment:
         (entry.interest_portion || 0) + (entry.principal_portion || 0),
@@ -221,6 +223,19 @@ export const getDashboardOverview = async (
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.dto;
+  }
+
+  // Ensure monthly execution logs exist for all months before fetching dashboard
+  const { ensureMonthlyExecutionLogs } = await import(
+    "./monthlyExecutionLogService.ts"
+  );
+  try {
+    await ensureMonthlyExecutionLogs(validatedSupabase, validatedUserId, {
+      now: options?.now,
+    });
+  } catch (error) {
+    // Log but don't fail dashboard load if log creation fails
+    console.warn("Failed to ensure monthly execution logs:", error);
   }
 
   const activeSimulation = await fetchActiveSimulation(

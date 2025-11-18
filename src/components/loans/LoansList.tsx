@@ -33,13 +33,13 @@ interface StatusBadgeProps {
   readonly isClosed: boolean;
 }
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   maximumFractionDigits: 2,
 });
 
-const percentFormatter = new Intl.NumberFormat("en-US", {
+const percentFormatter = new Intl.NumberFormat("pl-PL", {
   style: "percent",
   maximumFractionDigits: 2,
 });

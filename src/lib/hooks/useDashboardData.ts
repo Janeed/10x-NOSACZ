@@ -78,9 +78,9 @@ const goalLabels: Record<string, string> = {
   interest_savings: "Interest savings",
 };
 
-const currencyFormatter = new Intl.NumberFormat("en-US", {
+const currencyFormatter = new Intl.NumberFormat("pl-PL", {
   style: "currency",
-  currency: "USD",
+  currency: "PLN",
   maximumFractionDigits: 0,
 });
 

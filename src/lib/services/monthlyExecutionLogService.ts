@@ -446,3 +446,208 @@ export const patchLog = async (
 
   return dto;
 };
+
+/**
+ * Ensures monthly execution logs exist for all months from simulation start
+ * to current month for all active loans. Backfills past months as "backfilled"
+ * and creates current month as "pending"/"scheduled".
+ */
+export const ensureMonthlyExecutionLogs = async (
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  options?: { requestId?: string; now?: Date },
+): Promise<{ created: number; months: string[] }> => {
+  const now = options?.now || new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthStr = currentMonthStart.toISOString().split("T")[0];
+
+  // 1. Fetch active simulation
+  const { data: activeSim, error: simError } = await supabase
+    .from("simulations")
+    .select("id, created_at, started_at")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .single();
+
+  if (simError) {
+    if (simError.code === "PGRST116") {
+      // No active simulation, nothing to do
+      logger.info(
+        "ensure_monthly_logs",
+        "No active simulation found, skipping log creation",
+        {
+          userId,
+          ...(options?.requestId ? { requestId: options.requestId } : {}),
+        },
+      );
+      return { created: 0, months: [] };
+    }
+    throw internalError("DB_ERROR", "Failed to fetch active simulation", {
+      cause: simError,
+    });
+  }
+
+  // 2. Determine simulation start month
+  const simStartDate = new Date(activeSim.started_at || activeSim.created_at);
+  const simStartMonth = new Date(
+    simStartDate.getFullYear(),
+    simStartDate.getMonth(),
+    1,
+  );
+
+  // 3. Fetch all active (not closed) loans for this user
+  const { data: loans, error: loansError } = await supabase
+    .from("loans")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_closed", false);
+
+  if (loansError) {
+    throw internalError("DB_ERROR", "Failed to fetch loans", {
+      cause: loansError,
+    });
+  }
+
+  if (!loans || loans.length === 0) {
+    logger.info(
+      "ensure_monthly_logs",
+      "No active loans found, skipping log creation",
+      {
+        userId,
+        ...(options?.requestId ? { requestId: options.requestId } : {}),
+      },
+    );
+    return { created: 0, months: [] };
+  }
+
+  // 4. Fetch user settings to determine overpayment allocation
+  const { data: settings, error: settingsError } = await supabase
+    .from("user_settings")
+    .select("monthly_overpayment_limit")
+    .eq("user_id", userId)
+    .single();
+
+  if (settingsError && settingsError.code !== "PGRST116") {
+    throw internalError("DB_ERROR", "Failed to fetch user settings", {
+      cause: settingsError,
+    });
+  }
+
+  const monthlyOverpayment = settings?.monthly_overpayment_limit || 0;
+  const overpaymentPerLoan = loans.length > 0 ? monthlyOverpayment / loans.length : 0;
+
+  // 5. Generate list of months from simulation start to current month
+  const monthsToEnsure: Date[] = [];
+  let iterMonth = new Date(simStartMonth);
+  while (iterMonth <= currentMonthStart) {
+    monthsToEnsure.push(new Date(iterMonth));
+    iterMonth.setMonth(iterMonth.getMonth() + 1);
+  }
+
+  // 6. For each month and loan, check if log exists, create if missing
+  const logsToInsert: MonthlyExecutionLogInsert[] = [];
+
+  for (const month of monthsToEnsure) {
+    const monthStr = month.toISOString().split("T")[0];
+    const isPastMonth = month < currentMonthStart;
+
+    for (const loan of loans) {
+      // Check if log already exists
+      const { data: existing, error: checkError } = await supabase
+        .from("monthly_execution_logs")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("loan_id", loan.id)
+        .eq("month_start", monthStr)
+        .maybeSingle();
+
+      if (checkError) {
+        logger.warn(
+          "ensure_monthly_logs",
+          "Error checking existing log",
+          {
+            userId,
+            loanId: loan.id,
+            monthStart: monthStr,
+            error: checkError.message,
+            ...(options?.requestId ? { requestId: options.requestId } : {}),
+          },
+        );
+        continue;
+      }
+
+      if (existing) {
+        // Log already exists, skip
+        continue;
+      }
+
+      // Create log entry
+      if (isPastMonth) {
+        // Past month: mark as backfilled
+        logsToInsert.push({
+          user_id: userId,
+          loan_id: loan.id,
+          month_start: monthStr,
+          payment_status: "backfilled",
+          overpayment_status: "backfilled",
+          scheduled_overpayment_amount: overpaymentPerLoan,
+          actual_overpayment_amount: null,
+          payment_executed_at: month.toISOString(),
+          overpayment_executed_at: month.toISOString(),
+          reason_code: "Automatically backfilled on dashboard load",
+        });
+      } else {
+        // Current month: mark as pending/scheduled
+        logsToInsert.push({
+          user_id: userId,
+          loan_id: loan.id,
+          month_start: monthStr,
+          payment_status: "pending",
+          overpayment_status: "scheduled",
+          scheduled_overpayment_amount: overpaymentPerLoan,
+          actual_overpayment_amount: null,
+        });
+      }
+    }
+  }
+
+  // 7. Bulk insert missing logs
+  if (logsToInsert.length > 0) {
+    const { error: insertError } = await supabase
+      .from("monthly_execution_logs")
+      .insert(logsToInsert);
+
+    if (insertError) {
+      logger.error(
+        "ensure_monthly_logs",
+        "Failed to insert monthly execution logs",
+        {
+          userId,
+          count: logsToInsert.length,
+          error: insertError.message,
+          ...(options?.requestId ? { requestId: options.requestId } : {}),
+        },
+      );
+      throw internalError("DB_ERROR", "Failed to create monthly execution logs", {
+        cause: insertError,
+      });
+    }
+
+    logger.info(
+      "ensure_monthly_logs",
+      "Created monthly execution logs",
+      {
+        userId,
+        created: logsToInsert.length,
+        months: monthsToEnsure.map((m) => m.toISOString().split("T")[0]),
+        ...(options?.requestId ? { requestId: options.requestId } : {}),
+      },
+    );
+  }
+
+  return {
+    created: logsToInsert.length,
+    months: monthsToEnsure.map((m) => m.toISOString().split("T")[0]),
+  };
+};
+
