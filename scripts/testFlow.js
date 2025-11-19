@@ -6,6 +6,10 @@ const config = {
   password: "Password123!",
   isNewUser: true,
 };
+/**
+ * user+test@example.com
+ * Password123!
+ */
 
 const apiFetch = async (path, options = {}) => {
   const url = `${config.baseUrl}${path}`;

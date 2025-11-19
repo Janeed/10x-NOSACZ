@@ -610,10 +610,10 @@ export const ensureMonthlyExecutionLogs = async (
     loanTerms.set(s.loan_id, s.remaining_term_months);
   });
 
-  // Calculate initial standard payments
-  let previousStandardPaymentTotal = 0;
+  // Calculate initial standard payments (this is the baseline for reinvestment)
+  let firstStandardPaymentTotal = 0;
   snapshots.forEach(s => {
-    previousStandardPaymentTotal += deriveStandardMonthlyPayment(
+    firstStandardPaymentTotal += deriveStandardMonthlyPayment(
       s.starting_balance,
       s.starting_rate,
       s.remaining_term_months
@@ -643,8 +643,9 @@ export const ensureMonthlyExecutionLogs = async (
     });
 
     // Calculate available overpayment budget for this month
+    // Payment reduction is the difference between the FIRST month's payment and current month's payment
     const paymentReduction = reinvestEnabled 
-      ? Math.max(0, previousStandardPaymentTotal - currentStandardPaymentTotal)
+      ? Math.max(0, firstStandardPaymentTotal - currentStandardPaymentTotal)
       : 0;
     const monthOverpaymentBudget = baseOverpayment + paymentReduction;
 
@@ -668,9 +669,6 @@ export const ensureMonthlyExecutionLogs = async (
         overpaymentByMonthAndLoan.set(key, allocations[idx] || 0);
       });
     }
-
-    // Update previous payment total for next iteration
-    previousStandardPaymentTotal = currentStandardPaymentTotal;
   });
 
   // 8. Generate list of months from simulation start to current month
@@ -685,7 +683,7 @@ export const ensureMonthlyExecutionLogs = async (
   const logsToInsert: MonthlyExecutionLogInsert[] = [];
 
   for (const month of monthsToEnsure) {
-    const monthStr = month.toISOString().split("T")[0];
+    const monthStr = month.toISOString().split("T")[0]; //// YYYY-MM-DD
     const isPastMonth = month < currentMonthStart;
 
     for (const loan of loans) {
@@ -722,6 +720,27 @@ export const ensureMonthlyExecutionLogs = async (
       const overpaymentKey = `${monthStr}:${loan.id}`;
       const loanOverpayment = overpaymentByMonthAndLoan.get(overpaymentKey) || 0;
 
+      // Calculate interest and principal portions for standard payment
+      // Calculate month index using proper date arithmetic (year * 12 + month)
+      const monthIndex = (month.getFullYear() - simStartMonth.getFullYear()) * 12 +
+                        (month.getMonth() - simStartMonth.getMonth());
+      
+      let interestPortion = 0;
+      let principalPortion = 0;
+      let remainingBalanceAfter = loan.remaining_balance;
+
+      // Find this loan's data in the projection for this month
+      if (monthIndex >= 0 && monthIndex < projection.length) {
+        const monthProjection = projection[monthIndex];
+        const loanProjection = monthProjection.loanData.find(ld => ld.loanId === loan.id);
+        
+        if (loanProjection) {
+          interestPortion = loanProjection.interest;
+          principalPortion = loanProjection.principal;
+          remainingBalanceAfter = loanProjection.remaining;
+        }
+      }
+
       // Create log entry
       if (isPastMonth) {
         // Past month: mark as backfilled
@@ -733,6 +752,9 @@ export const ensureMonthlyExecutionLogs = async (
           overpayment_status: "backfilled",
           scheduled_overpayment_amount: loanOverpayment,
           actual_overpayment_amount: null,
+          interest_portion: interestPortion,
+          principal_portion: principalPortion,
+          remaining_balance_after: remainingBalanceAfter,
           payment_executed_at: month.toISOString(),
           overpayment_executed_at: month.toISOString(),
           reason_code: "Automatically backfilled on dashboard load",
@@ -747,6 +769,9 @@ export const ensureMonthlyExecutionLogs = async (
           overpayment_status: "scheduled",
           scheduled_overpayment_amount: loanOverpayment,
           actual_overpayment_amount: null,
+          interest_portion: interestPortion,
+          principal_portion: principalPortion,
+          remaining_balance_after: remainingBalanceAfter,
         });
       }
     }
