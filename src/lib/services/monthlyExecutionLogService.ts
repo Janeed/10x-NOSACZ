@@ -551,6 +551,19 @@ export const ensureMonthlyExecutionLogs = async (
   const baseOverpayment = activeSim.monthly_overpayment_limit || 0;
   const reinvestEnabled = activeSim.reinvest_reduced_payments || false;
 
+  logger.info(
+    "ensure_monthly_logs",
+    "Simulation parameters for overpayment calculation",
+    {
+      userId,
+      simulationId: activeSim.id,
+      strategy,
+      baseOverpayment,
+      reinvestEnabled,
+      ...(options?.requestId ? { requestId: options.requestId } : {}),
+    },
+  );
+
   // 6. Run projection from simulation start to current month
   // This gives us accurate overpayment allocations for each month
   const { generateStrategyProjection } = await import("./simulationSharedService.ts");
@@ -598,77 +611,43 @@ export const ensureMonthlyExecutionLogs = async (
   );
 
   // 7. Build overpayment map from projection
-  // For each month in the projection, calculate overpayment per loan
-  // by re-running the allocation algorithm with the correct budget
-  const { allocateOverpayment, deriveStandardMonthlyPayment } = await import("./simulationSharedService.ts");
-  
-  // Track loan balances and payments as we iterate through projection
-  const loanBalances = new Map<string, number>();
-  const loanTerms = new Map<string, number>();
-  snapshots.forEach(s => {
-    loanBalances.set(s.loan_id, s.starting_balance);
-    loanTerms.set(s.loan_id, s.remaining_term_months);
-  });
-
-  // Calculate initial standard payments (this is the baseline for reinvestment)
-  let firstStandardPaymentTotal = 0;
-  snapshots.forEach(s => {
-    firstStandardPaymentTotal += deriveStandardMonthlyPayment(
-      s.starting_balance,
-      s.starting_rate,
-      s.remaining_term_months
-    );
-  });
-
-  // Create map: "YYYY-MM-DD:loanId" -> overpaymentAmount
+  // Extract overpayment by calculating: total payment - standard payment
+  const { deriveStandardMonthlyPayment } = await import("./simulationSharedService.ts");
   const overpaymentByMonthAndLoan = new Map<string, number>();
 
+  console.log("PROJECTION:", projection);
+  console.log("PROJECTION1:", projection[0].loanData[0]);
+  console.log("PROJECTION2:", projection[0].loanData[1]);
   projection.forEach((monthData, monthIndex) => {
-    // Update balances from this month's data
     monthData.loanData.forEach(loanData => {
-      loanBalances.set(loanData.loanId, loanData.remaining);
-      const currentTerm = loanTerms.get(loanData.loanId) || 1;
-      loanTerms.set(loanData.loanId, Math.max(1, currentTerm - 1));
+      // Calculate what the standard payment would be for this loan
+      const snapshot = snapshots.find(s => s.loan_id === loanData.loanId);
+      if (!snapshot) return;
+      
+      // Get the balance at the START of this month (before payment)
+      // For the first month, use starting_balance
+      // For subsequent months, use the remaining balance from the PREVIOUS month + this month's principal
+      let balanceAtMonthStart = loanData.remaining + loanData.principal;
+      
+      // Calculate remaining term - starts at full term and decreases each month
+      const remainingTerm = Math.max(1, snapshot.remaining_term_months - monthIndex);
+      
+      // Calculate standard monthly payment for this balance and term
+      const standardPayment = deriveStandardMonthlyPayment(
+        balanceAtMonthStart,
+        snapshot.starting_rate,
+        remainingTerm
+      );
+      
+      // The overpayment is the difference between total principal paid and what would be paid with just standard payment
+      // Total payment = interest + principal, so principal = payment - interest
+      // Overpayment = actual principal - (standard payment - interest)
+      const standardPrincipal = Math.max(0, standardPayment - loanData.interest);
+      const overpayment = Math.max(0, loanData.principal - standardPrincipal);
+      
+      const key = `${monthData.month}:${loanData.loanId}`;
+      overpaymentByMonthAndLoan.set(key, overpayment);
     });
-
-    // Calculate current standard payment total
-    let currentStandardPaymentTotal = 0;
-    monthData.loanData.forEach(loanData => {
-      const balance = loanBalances.get(loanData.loanId) || 0;
-      const rate = snapshots.find(s => s.loan_id === loanData.loanId)?.starting_rate || 0;
-      const term = loanTerms.get(loanData.loanId) || 1;
-      if (balance > 0.01) {
-        currentStandardPaymentTotal += deriveStandardMonthlyPayment(balance, rate, term);
-      }
-    });
-
-    // Calculate available overpayment budget for this month
-    // Payment reduction is the difference between the FIRST month's payment and current month's payment
-    const paymentReduction = reinvestEnabled 
-      ? Math.max(0, firstStandardPaymentTotal - currentStandardPaymentTotal)
-      : 0;
-    const monthOverpaymentBudget = baseOverpayment + paymentReduction;
-
-    // Build projection loans for allocation
-    const monthLoans = monthData.loanData
-      .filter(ld => ld.remaining > 0.01)
-      .map(loanData => ({
-        id: loanData.loanId,
-        principal: loanData.loanAmount,
-        remaining_balance: loanData.remaining,
-        annual_rate: snapshots.find(s => s.loan_id === loanData.loanId)?.starting_rate || 0,
-        term_months: loanTerms.get(loanData.loanId) || 1,
-        monthly_payment: 0,
-      }));
-
-    // Allocate overpayment for this month
-    if (monthLoans.length > 0) {
-      const allocations = allocateOverpayment(monthLoans, strategy, monthOverpaymentBudget);
-      monthLoans.forEach((loan, idx) => {
-        const key = `${monthData.month}:${loan.id}`;
-        overpaymentByMonthAndLoan.set(key, allocations[idx] || 0);
-      });
-    }
   });
 
   // 8. Generate list of months from simulation start to current month
