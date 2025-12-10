@@ -10,7 +10,13 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "database:dev:start": "supabase start"
+    "database:dev:start": "supabase start",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed --project=chromium-desktop",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@astrojs/node": "^9.4.3",
@@ -35,6 +41,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@eslint/compat": "1.2.7",
     "@eslint/js": "9.23.0",
     "@typescript-eslint/eslint-plugin": "8.28.0",
@@ -53,7 +60,9 @@
     "lint-staged": "15.5.0",
     "prettier-plugin-astro": "0.14.1",
     "supabase": "^2.54.11",
-    "typescript-eslint": "8.28.0"
+    "typescript-eslint": "8.28.0",
+    "@vitest/coverage-v8": "^2.1.4",
+    "vitest": "^2.1.4"
   },
   "lint-staged": {
     "*.{ts,tsx,astro}": [

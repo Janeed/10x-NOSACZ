@@ -18,10 +18,11 @@
 2. [Tech Stack](#tech-stack)
 3. [Getting Started Locally](#getting-started-locally)
 4. [Available Scripts](#available-scripts)
-5. [Project Scope](#project-scope)
-6. [Project Status](#project-status)
-7. [License](#license)
-8. [Additional Documentation](#additional-documentation)
+5. [Testing Strategy](#testing-strategy)
+6. [Project Scope](#project-scope)
+7. [Project Status](#project-status)
+8. [License](#license)
+9. [Additional Documentation](#additional-documentation)
 
 ## Project Description
 
@@ -59,6 +60,8 @@ Core value:
 - ESLint 9 + TypeScript ESLint – Static analysis.
 - Prettier (with `prettier-plugin-astro`) – Consistent formatting.
 - Husky + lint-staged – Pre-commit enforcement.
+- Vitest + React Testing Library (planned) – Unit and component tests for `src/lib/**` and `src/components/**`.
+- Playwright (planned) – Browser E2E tests for core user journeys (auth → loans → wizard → dashboard → monthly updates). See `DOCS/TEST_PLAN.md` for details.
 
 ## Getting Started Locally
 
@@ -134,6 +137,16 @@ From `package.json`:
 - `lint` – Run ESLint across project.
 - `lint:fix` – ESLint with auto-fix.
 - `format` – Run Prettier formatting.
+
+## Testing Strategy
+
+The testing approach for 10x-NOSACZ is defined in `DOCS/TEST_PLAN.md` and centers on three layers:
+
+- **Unit tests (planned)**: Vitest-based tests for pure and domain-heavy logic in `src/lib/utils.ts`, `src/lib/services/**`, `src/lib/validation/**`, and `src/lib/viewModels/**`, with emphasis on interest/amortization calculations, strategy allocation, and edge cases.
+- **Component tests (planned)**: React Testing Library for key components in `src/components/**` (forms, dialogs, dashboard widgets, wizard steps), including basic accessibility checks and conditional rendering.
+- **End-to-end tests (planned)**: Playwright scenarios covering full user journeys (registration/login, defining loans, configuring goal/strategy, running simulations, reviewing dashboard, performing monthly execution logs) against a dedicated test environment with seeded Supabase data.
+
+As the test suites are implemented, dedicated npm scripts (e.g. `test:unit`, `test:e2e`) will be added to `package.json` and wired into CI.
 
 ## Project Scope
 

@@ -3,3 +3,7 @@ node_modules
 .vscode
 .env
 dist
+coverage
+test-results
+playwright-report
+playwright/.cache
