@@ -37,6 +37,7 @@ export function FormActions({
     <div className={cn("space-y-4", className)}>
       <Button
         type="submit"
+        data-test="auth-submit-button"
         className="w-full"
         disabled={isSubmitting || isDisabled}
         aria-live={isSubmitting || isDisabled ? "polite" : undefined}

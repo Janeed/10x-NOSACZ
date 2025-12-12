@@ -21,11 +21,20 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
   },
   projects: [
+    // Setup project for authentication
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    // Main test project with authentication
     {
       name: 'chromium-desktop',
       use: {
         ...devices['Desktop Chrome'],
+        // Use authenticated state from setup
+        storageState: '.auth/user.json',
       },
+      dependencies: ['setup'],
     },
   ],
   webServer: {

@@ -370,9 +370,9 @@ export function AuthForm({ mode, onSuccess }: AuthFormProps) {
   );
 
   return (
-    <form className="space-y-6 p-6" onSubmit={handleSubmit} noValidate>
+    <form data-test="auth-form" data-mode={mode} className="space-y-6 p-6" onSubmit={handleSubmit} noValidate>
       <header className="space-y-1">
-        <h2 className="text-xl font-semibold text-foreground">
+        <h2 data-test="auth-form-title" className="text-xl font-semibold text-foreground">
           {FORM_COPY[mode].title}
         </h2>
         <p className="text-sm text-muted-foreground">

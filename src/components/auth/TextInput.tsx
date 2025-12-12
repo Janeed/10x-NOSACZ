@@ -60,6 +60,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           id={id}
           name={id}
           type="email"
+          data-test={`auth-${id}-input`}
           value={value}
           autoComplete={autoComplete}
           disabled={disabled}
@@ -73,7 +74,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           )}
         />
         {error ? (
-          <p id={errorId} className="text-xs text-destructive">
+          <p id={errorId} data-test={`auth-${id}-error`} className="text-xs text-destructive">
             {error}
           </p>
         ) : null}

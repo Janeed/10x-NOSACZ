@@ -58,6 +58,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             id={id}
             name={id}
             type={isRevealed ? "text" : "password"}
+            data-test={`auth-${id}-input`}
             value={value}
             autoComplete={autoComplete}
             disabled={disabled}
@@ -72,6 +73,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           />
           <button
             type="button"
+            data-test={`auth-${id}-toggle`}
             onClick={toggleVisibility}
             className="absolute inset-y-0 right-2 inline-flex items-center justify-center rounded-md px-2 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             aria-label={isRevealed ? "Hide password" : "Show password"}
@@ -86,7 +88,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </button>
         </div>
         {error ? (
-          <p id={errorId} className="text-xs text-destructive">
+          <p id={errorId} data-test={`auth-${id}-error`} className="text-xs text-destructive">
             {error}
           </p>
         ) : null}
