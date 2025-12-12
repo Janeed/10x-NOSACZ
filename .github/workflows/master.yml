@@ -7,9 +7,31 @@ on:
     branches: [ main ] 
 
 jobs:
-  hello:
+  precheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Say Hello
-        run: echo "Hello, Github Actions!"
+      - name: Greeting
+        run: echo "Hello my friend, I am the master workflow! I will be running the tests and deploying the application."
+      - name: Setup NodeJS based on .nvmrc file
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install dependencies
+        run: npm ci
+      - name: Check code quality
+        run: npm run lint
+      - name: Run tests
+        run: npm run test
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup NodeJS based on .nvmrc file
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install dependencies
+        run: npm ci
+      - name: Build artifact
+        run: npm run build

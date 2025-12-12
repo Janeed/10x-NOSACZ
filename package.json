@@ -12,7 +12,6 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "database:dev:start": "supabase start",
-    "database:dev:stop": "supabase stop",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
