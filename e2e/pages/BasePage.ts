@@ -1,4 +1,4 @@
-import { type Page, type Locator } from '@playwright/test';
+import { type Page, type Locator } from "@playwright/test";
 
 /**
  * Base Page Object class providing common functionality for all pages
@@ -18,7 +18,7 @@ export abstract class BasePage {
    * Wait for page to be fully loaded
    */
   async waitForLoad(): Promise<void> {
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState("networkidle");
   }
 
   /**
@@ -32,21 +32,21 @@ export abstract class BasePage {
    * Wait for element to be visible
    */
   async waitForVisible(testId: string, timeout?: number): Promise<void> {
-    await this.getByTestId(testId).waitFor({ state: 'visible', timeout });
+    await this.getByTestId(testId).waitFor({ state: "visible", timeout });
   }
 
   /**
    * Wait for element to be hidden
    */
   async waitForHidden(testId: string, timeout?: number): Promise<void> {
-    await this.getByTestId(testId).waitFor({ state: 'hidden', timeout });
+    await this.getByTestId(testId).waitFor({ state: "hidden", timeout });
   }
 
   /**
    * Check if element exists in DOM
    */
   async exists(testId: string): Promise<boolean> {
-    return await this.getByTestId(testId).count() > 0;
+    return (await this.getByTestId(testId).count()) > 0;
   }
 
   /**
@@ -64,7 +64,7 @@ export abstract class BasePage {
    * Get text content of element
    */
   async getTextContent(testId: string): Promise<string> {
-    return (await this.getByTestId(testId).textContent()) ?? '';
+    return (await this.getByTestId(testId).textContent()) ?? "";
   }
 
   /**
@@ -99,7 +99,9 @@ export abstract class BasePage {
    * Take a screenshot
    */
   async screenshot(name: string): Promise<void> {
-    await this.page.screenshot({ path: `screenshots/${name}.png`, fullPage: true });
+    await this.page.screenshot({
+      path: `screenshots/${name}.png`,
+      fullPage: true,
+    });
   }
 }
-

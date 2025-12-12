@@ -1,8 +1,8 @@
-import { type Page, type Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
-import { LoanEditorSidebar } from './LoanEditorSidebar';
-import { LoanDeleteConfirmDialog } from './LoanDeleteConfirmDialog';
-import { LoanBalanceQuickEditDialog } from './LoanBalanceQuickEditDialog';
+import { type Page, type Locator, expect } from "@playwright/test";
+import { BasePage } from "./BasePage";
+import { LoanEditorSidebar } from "./LoanEditorSidebar";
+import { LoanDeleteConfirmDialog } from "./LoanDeleteConfirmDialog";
+import { LoanBalanceQuickEditDialog } from "./LoanBalanceQuickEditDialog";
 
 export interface LoanData {
   principal: string;
@@ -12,7 +12,7 @@ export interface LoanData {
   originalTermMonths: string;
   startMonthMonth: string;
   startMonthYear: string;
-  rateEffective?: 'current' | 'next';
+  rateEffective?: "current" | "next";
 }
 
 /**
@@ -43,34 +43,34 @@ export class LoansPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    
+
     // Initialize sub-components
     this.editor = new LoanEditorSidebar(page);
     this.deleteDialog = new LoanDeleteConfirmDialog(page);
     this.balanceDialog = new LoanBalanceQuickEditDialog(page);
 
     // Initialize locators
-    this.addLoanButton = this.getByTestId('loans-add-button');
-    this.sortFieldSelect = this.getByTestId('loans-sort-field-select');
-    this.sortOrderToggle = this.getByTestId('loans-sort-order-toggle');
-    this.loansTable = this.getByTestId('loans-table');
-    this.staleBanner = this.getByTestId('loans-stale-banner');
-    this.staleTrigger = this.getByTestId('loans-stale-trigger');
-    this.staleDismissButton = this.getByTestId('loans-stale-dismiss-button');
-    this.loadingIndicator = this.getByTestId('loans-loading');
-    this.errorContainer = this.getByTestId('loans-error');
-    this.errorMessage = this.getByTestId('loans-error-message');
-    this.retryButton = this.getByTestId('loans-retry-button');
-    this.emptyState = this.getByTestId('loans-empty-state');
-    this.emptyStateAddButton = this.getByTestId('loans-empty-state-add-button');
-    this.paginationInfo = this.getByTestId('loans-pagination-info');
+    this.addLoanButton = this.getByTestId("loans-add-button");
+    this.sortFieldSelect = this.getByTestId("loans-sort-field-select");
+    this.sortOrderToggle = this.getByTestId("loans-sort-order-toggle");
+    this.loansTable = this.getByTestId("loans-table");
+    this.staleBanner = this.getByTestId("loans-stale-banner");
+    this.staleTrigger = this.getByTestId("loans-stale-trigger");
+    this.staleDismissButton = this.getByTestId("loans-stale-dismiss-button");
+    this.loadingIndicator = this.getByTestId("loans-loading");
+    this.errorContainer = this.getByTestId("loans-error");
+    this.errorMessage = this.getByTestId("loans-error-message");
+    this.retryButton = this.getByTestId("loans-retry-button");
+    this.emptyState = this.getByTestId("loans-empty-state");
+    this.emptyStateAddButton = this.getByTestId("loans-empty-state-add-button");
+    this.paginationInfo = this.getByTestId("loans-pagination-info");
   }
 
   /**
    * Navigate to the loans page
    */
   async navigate(): Promise<void> {
-    await this.goto('/loans');
+    await this.goto("/loans");
     await this.waitForLoad();
   }
 
@@ -78,7 +78,7 @@ export class LoansPage extends BasePage {
    * Wait for loans table to be visible
    */
   async waitForTableVisible(): Promise<void> {
-    await this.loansTable.waitFor({ state: 'visible' });
+    await this.loansTable.waitFor({ state: "visible" });
   }
 
   /**
@@ -99,7 +99,7 @@ export class LoansPage extends BasePage {
    * Get error message text
    */
   async getErrorMessage(): Promise<string> {
-    return await this.errorMessage.textContent() ?? '';
+    return (await this.errorMessage.textContent()) ?? "";
   }
 
   /**
@@ -157,7 +157,9 @@ export class LoansPage extends BasePage {
    * Get loan row by loan ID
    */
   getLoanRowById(loanId: string): Locator {
-    return this.page.locator(`[data-test="loan-row"][data-loan-id="${loanId}"]`);
+    return this.page.locator(
+      `[data-test="loan-row"][data-loan-id="${loanId}"]`,
+    );
   }
 
   /**
@@ -172,7 +174,7 @@ export class LoansPage extends BasePage {
    */
   async getLoanId(rowIndex: number): Promise<string> {
     const row = this.getLoanRow(rowIndex);
-    return await row.getAttribute('data-loan-id') ?? '';
+    return (await row.getAttribute("data-loan-id")) ?? "";
   }
 
   /**
@@ -188,12 +190,23 @@ export class LoansPage extends BasePage {
   }> {
     const row = this.getLoanRow(rowIndex);
     return {
-      label: await row.locator('[data-test="loan-label"]').textContent() ?? '',
-      remainingBalance: await row.locator('[data-test="loan-remaining-balance"]').textContent() ?? '',
-      annualRate: await row.locator('[data-test="loan-annual-rate"]').textContent() ?? '',
-      term: await row.locator('[data-test="loan-term"]').textContent() ?? '',
-      startMonth: await row.locator('[data-test="loan-start-month"]').textContent() ?? '',
-      status: await row.locator('[data-test="loan-status-badge"]').getAttribute('data-status') ?? '',
+      label:
+        (await row.locator('[data-test="loan-label"]').textContent()) ?? "",
+      remainingBalance:
+        (await row
+          .locator('[data-test="loan-remaining-balance"]')
+          .textContent()) ?? "",
+      annualRate:
+        (await row.locator('[data-test="loan-annual-rate"]').textContent()) ??
+        "",
+      term: (await row.locator('[data-test="loan-term"]').textContent()) ?? "",
+      startMonth:
+        (await row.locator('[data-test="loan-start-month"]').textContent()) ??
+        "",
+      status:
+        (await row
+          .locator('[data-test="loan-status-badge"]')
+          .getAttribute("data-status")) ?? "",
     };
   }
 
@@ -227,7 +240,9 @@ export class LoansPage extends BasePage {
   /**
    * Change sort field
    */
-  async setSortField(field: 'created_at' | 'start_month' | 'remaining_balance'): Promise<void> {
+  async setSortField(
+    field: "created_at" | "start_month" | "remaining_balance",
+  ): Promise<void> {
     await this.sortFieldSelect.selectOption(field);
   }
 
@@ -242,13 +257,15 @@ export class LoansPage extends BasePage {
    * Get current sort order text
    */
   async getSortOrderText(): Promise<string> {
-    return await this.sortOrderToggle.textContent() ?? '';
+    return (await this.sortOrderToggle.textContent()) ?? "";
   }
 
   /**
    * Click a column header to sort by that column
    */
-  async sortByColumn(field: 'remaining_balance' | 'start_month'): Promise<void> {
+  async sortByColumn(
+    field: "remaining_balance" | "start_month",
+  ): Promise<void> {
     await this.page.locator(`[data-test="loans-sort-${field}"]`).click();
   }
 
@@ -263,10 +280,10 @@ export class LoansPage extends BasePage {
    * Get stale trigger text
    */
   async getStaleTriggerText(): Promise<string> {
-    if (!await this.staleTrigger.isVisible()) {
-      return '';
+    if (!(await this.staleTrigger.isVisible())) {
+      return "";
     }
-    return await this.staleTrigger.textContent() ?? '';
+    return (await this.staleTrigger.textContent()) ?? "";
   }
 
   /**
@@ -274,14 +291,14 @@ export class LoansPage extends BasePage {
    */
   async dismissStaleBanner(): Promise<void> {
     await this.staleDismissButton.click();
-    await this.staleBanner.waitFor({ state: 'hidden' });
+    await this.staleBanner.waitFor({ state: "hidden" });
   }
 
   /**
    * Get pagination information text
    */
   async getPaginationInfo(): Promise<string> {
-    return await this.paginationInfo.textContent() ?? '';
+    return (await this.paginationInfo.textContent()) ?? "";
   }
 
   /**
@@ -291,7 +308,7 @@ export class LoansPage extends BasePage {
     await expect(this.page).toHaveURL(/\/loans/);
     const isLoading = await this.isLoading();
     if (isLoading) {
-      await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 10000 });
+      await this.loadingIndicator.waitFor({ state: "hidden", timeout: 10000 });
     }
   }
 
@@ -308,7 +325,10 @@ export class LoansPage extends BasePage {
   /**
    * Complete flow: Edit loan and verify stale banner
    */
-  async editLoanAndVerifyStale(rowIndex: number, data: Partial<LoanData>): Promise<void> {
+  async editLoanAndVerifyStale(
+    rowIndex: number,
+    data: Partial<LoanData>,
+  ): Promise<void> {
     await this.editLoan(rowIndex);
     await this.editor.fillForm(data as LoanData);
     await this.editor.submit();
@@ -331,7 +351,10 @@ export class LoansPage extends BasePage {
   /**
    * Complete flow: Adjust balance and verify stale banner
    */
-  async adjustBalanceAndVerifyStale(rowIndex: number, newBalance: string): Promise<void> {
+  async adjustBalanceAndVerifyStale(
+    rowIndex: number,
+    newBalance: string,
+  ): Promise<void> {
     await this.openQuickBalance(rowIndex);
     await this.balanceDialog.setBalance(newBalance);
     await this.balanceDialog.submit();
@@ -339,4 +362,3 @@ export class LoansPage extends BasePage {
     await expect(this.staleBanner).toBeVisible();
   }
 }
-

@@ -1,5 +1,5 @@
-import { type Page, type Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { type Page, type Locator, expect } from "@playwright/test";
+import { BasePage } from "./BasePage";
 
 export interface LoanFormData {
   principal?: string;
@@ -9,7 +9,7 @@ export interface LoanFormData {
   originalTermMonths?: string;
   startMonthMonth?: string;
   startMonthYear?: string;
-  rateEffective?: 'current' | 'next';
+  rateEffective?: "current" | "next";
 }
 
 /**
@@ -52,46 +52,60 @@ export class LoanEditorSidebar extends BasePage {
     super(page);
 
     // Initialize locators
-    this.sidebar = this.getByTestId('loan-editor-sidebar');
-    this.title = this.getByTestId('loan-editor-title');
-    this.closeButton = this.getByTestId('loan-editor-close-button');
-    this.form = this.getByTestId('loan-editor-form');
+    this.sidebar = this.getByTestId("loan-editor-sidebar");
+    this.title = this.getByTestId("loan-editor-title");
+    this.closeButton = this.getByTestId("loan-editor-close-button");
+    this.form = this.getByTestId("loan-editor-form");
 
-    this.principalInput = this.getByTestId('loan-principal-input');
-    this.principalError = this.getByTestId('loan-principal-error');
-    this.remainingBalanceInput = this.getByTestId('loan-remaining-balance-input');
-    this.remainingBalanceError = this.getByTestId('loan-remaining-balance-error');
-    this.annualRateInput = this.getByTestId('loan-annual-rate-input');
-    this.annualRateError = this.getByTestId('loan-annual-rate-error');
-    this.termMonthsInput = this.getByTestId('loan-term-months-input');
-    this.termMonthsError = this.getByTestId('loan-term-months-error');
-    this.originalTermMonthsInput = this.getByTestId('loan-original-term-months-input');
-    this.originalTermMonthsError = this.getByTestId('loan-original-term-months-error');
-    this.startMonthMonthSelect = this.getByTestId('loan-start-month-month-select');
-    this.startMonthYearSelect = this.getByTestId('loan-start-month-year-select');
-    this.startMonthError = this.getByTestId('loan-start-month-error');
+    this.principalInput = this.getByTestId("loan-principal-input");
+    this.principalError = this.getByTestId("loan-principal-error");
+    this.remainingBalanceInput = this.getByTestId(
+      "loan-remaining-balance-input",
+    );
+    this.remainingBalanceError = this.getByTestId(
+      "loan-remaining-balance-error",
+    );
+    this.annualRateInput = this.getByTestId("loan-annual-rate-input");
+    this.annualRateError = this.getByTestId("loan-annual-rate-error");
+    this.termMonthsInput = this.getByTestId("loan-term-months-input");
+    this.termMonthsError = this.getByTestId("loan-term-months-error");
+    this.originalTermMonthsInput = this.getByTestId(
+      "loan-original-term-months-input",
+    );
+    this.originalTermMonthsError = this.getByTestId(
+      "loan-original-term-months-error",
+    );
+    this.startMonthMonthSelect = this.getByTestId(
+      "loan-start-month-month-select",
+    );
+    this.startMonthYearSelect = this.getByTestId(
+      "loan-start-month-year-select",
+    );
+    this.startMonthError = this.getByTestId("loan-start-month-error");
 
-    this.rateEffectiveCurrentRadio = this.getByTestId('loan-rate-effective-current');
-    this.rateEffectiveNextRadio = this.getByTestId('loan-rate-effective-next');
-    this.rateEffectiveError = this.getByTestId('loan-rate-effective-error');
+    this.rateEffectiveCurrentRadio = this.getByTestId(
+      "loan-rate-effective-current",
+    );
+    this.rateEffectiveNextRadio = this.getByTestId("loan-rate-effective-next");
+    this.rateEffectiveError = this.getByTestId("loan-rate-effective-error");
 
-    this.generalError = this.getByTestId('loan-editor-error');
-    this.cancelButton = this.getByTestId('loan-editor-cancel-button');
-    this.submitButton = this.getByTestId('loan-editor-submit-button');
+    this.generalError = this.getByTestId("loan-editor-error");
+    this.cancelButton = this.getByTestId("loan-editor-cancel-button");
+    this.submitButton = this.getByTestId("loan-editor-submit-button");
   }
 
   /**
    * Wait for sidebar to be visible
    */
   async waitForVisible(): Promise<void> {
-    await this.sidebar.waitFor({ state: 'visible' });
+    await this.sidebar.waitFor({ state: "visible" });
   }
 
   /**
    * Wait for sidebar to be hidden
    */
   async waitForHidden(): Promise<void> {
-    await this.sidebar.waitFor({ state: 'hidden' });
+    await this.sidebar.waitFor({ state: "hidden" });
   }
 
   /**
@@ -104,31 +118,34 @@ export class LoanEditorSidebar extends BasePage {
   /**
    * Get the current mode (create or edit)
    */
-  async getMode(): Promise<'create' | 'edit' | null> {
-    return await this.sidebar.getAttribute('data-mode') as 'create' | 'edit' | null;
+  async getMode(): Promise<"create" | "edit" | null> {
+    return (await this.sidebar.getAttribute("data-mode")) as
+      | "create"
+      | "edit"
+      | null;
   }
 
   /**
    * Get title text
    */
   async getTitle(): Promise<string> {
-    return await this.title.textContent() ?? '';
+    return (await this.title.textContent()) ?? "";
   }
 
   /**
    * Verify sidebar is in create mode
    */
   async verifyCreateMode(): Promise<void> {
-    await expect(this.sidebar).toHaveAttribute('data-mode', 'create');
-    await expect(this.title).toContainText('Add loan');
+    await expect(this.sidebar).toHaveAttribute("data-mode", "create");
+    await expect(this.title).toContainText("Add loan");
   }
 
   /**
    * Verify sidebar is in edit mode
    */
   async verifyEditMode(): Promise<void> {
-    await expect(this.sidebar).toHaveAttribute('data-mode', 'edit');
-    await expect(this.title).toContainText('Edit loan');
+    await expect(this.sidebar).toHaveAttribute("data-mode", "edit");
+    await expect(this.title).toContainText("Edit loan");
   }
 
   /**
@@ -136,15 +153,21 @@ export class LoanEditorSidebar extends BasePage {
    */
   async setPrincipal(value: string): Promise<void> {
     // For negative values (validation tests), use JavaScript to bypass HTML5 min attribute
-    if (value.startsWith('-')) {
-      await this.principalInput.evaluate((el: HTMLInputElement, val: string) => {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        nativeInputValueSetter?.call(el, val);
-        const inputEvent = new Event('input', { bubbles: true });
-        el.dispatchEvent(inputEvent);
-        const changeEvent = new Event('change', { bubbles: true });
-        el.dispatchEvent(changeEvent);
-      }, value);
+    if (value.startsWith("-")) {
+      await this.principalInput.evaluate(
+        (el: HTMLInputElement, val: string) => {
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            "value",
+          )?.set;
+          nativeInputValueSetter?.call(el, val);
+          const inputEvent = new Event("input", { bubbles: true });
+          el.dispatchEvent(inputEvent);
+          const changeEvent = new Event("change", { bubbles: true });
+          el.dispatchEvent(changeEvent);
+        },
+        value,
+      );
       await this.page.waitForTimeout(200);
     } else {
       await this.principalInput.fill(value);
@@ -170,15 +193,21 @@ export class LoanEditorSidebar extends BasePage {
    */
   async setTermMonths(value: string): Promise<void> {
     // For zero or negative values (validation tests), use JavaScript to bypass HTML5 min attribute
-    if (value === '0' || value.startsWith('-')) {
-      await this.termMonthsInput.evaluate((el: HTMLInputElement, val: string) => {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        nativeInputValueSetter?.call(el, val);
-        const inputEvent = new Event('input', { bubbles: true });
-        el.dispatchEvent(inputEvent);
-        const changeEvent = new Event('change', { bubbles: true });
-        el.dispatchEvent(changeEvent);
-      }, value);
+    if (value === "0" || value.startsWith("-")) {
+      await this.termMonthsInput.evaluate(
+        (el: HTMLInputElement, val: string) => {
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            "value",
+          )?.set;
+          nativeInputValueSetter?.call(el, val);
+          const inputEvent = new Event("input", { bubbles: true });
+          el.dispatchEvent(inputEvent);
+          const changeEvent = new Event("change", { bubbles: true });
+          el.dispatchEvent(changeEvent);
+        },
+        value,
+      );
       await this.page.waitForTimeout(200);
     } else {
       await this.termMonthsInput.fill(value);
@@ -190,15 +219,21 @@ export class LoanEditorSidebar extends BasePage {
    */
   async setOriginalTermMonths(value: string): Promise<void> {
     // For zero or negative values (validation tests), use JavaScript to bypass HTML5 min attribute
-    if (value === '0' || value.startsWith('-')) {
-      await this.originalTermMonthsInput.evaluate((el: HTMLInputElement, val: string) => {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        nativeInputValueSetter?.call(el, val);
-        const inputEvent = new Event('input', { bubbles: true });
-        el.dispatchEvent(inputEvent);
-        const changeEvent = new Event('change', { bubbles: true });
-        el.dispatchEvent(changeEvent);
-      }, value);
+    if (value === "0" || value.startsWith("-")) {
+      await this.originalTermMonthsInput.evaluate(
+        (el: HTMLInputElement, val: string) => {
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLInputElement.prototype,
+            "value",
+          )?.set;
+          nativeInputValueSetter?.call(el, val);
+          const inputEvent = new Event("input", { bubbles: true });
+          el.dispatchEvent(inputEvent);
+          const changeEvent = new Event("change", { bubbles: true });
+          el.dispatchEvent(changeEvent);
+        },
+        value,
+      );
       await this.page.waitForTimeout(200);
     } else {
       await this.originalTermMonthsInput.fill(value);
@@ -258,9 +293,9 @@ export class LoanEditorSidebar extends BasePage {
     if (data.startMonthYear !== undefined) {
       await this.setStartYear(data.startMonthYear);
     }
-    if (data.rateEffective === 'next') {
+    if (data.rateEffective === "next") {
       await this.setRateEffectiveNext();
-    } else if (data.rateEffective === 'current') {
+    } else if (data.rateEffective === "current") {
       await this.setRateEffectiveCurrent();
     }
   }
@@ -299,60 +334,60 @@ export class LoanEditorSidebar extends BasePage {
    * Get general error message
    */
   async getGeneralError(): Promise<string> {
-    if (!await this.generalError.isVisible()) {
-      return '';
+    if (!(await this.generalError.isVisible())) {
+      return "";
     }
-    return await this.generalError.textContent() ?? '';
+    return (await this.generalError.textContent()) ?? "";
   }
 
   /**
    * Get principal error message
    */
   async getPrincipalError(): Promise<string> {
-    if (!await this.principalError.isVisible()) {
-      return '';
+    if (!(await this.principalError.isVisible())) {
+      return "";
     }
-    return await this.principalError.textContent() ?? '';
+    return (await this.principalError.textContent()) ?? "";
   }
 
   /**
    * Get remaining balance error message
    */
   async getRemainingBalanceError(): Promise<string> {
-    if (!await this.remainingBalanceError.isVisible()) {
-      return '';
+    if (!(await this.remainingBalanceError.isVisible())) {
+      return "";
     }
-    return await this.remainingBalanceError.textContent() ?? '';
+    return (await this.remainingBalanceError.textContent()) ?? "";
   }
 
   /**
    * Get annual rate error message
    */
   async getAnnualRateError(): Promise<string> {
-    if (!await this.annualRateError.isVisible()) {
-      return '';
+    if (!(await this.annualRateError.isVisible())) {
+      return "";
     }
-    return await this.annualRateError.textContent() ?? '';
+    return (await this.annualRateError.textContent()) ?? "";
   }
 
   /**
    * Get term months error message
    */
   async getTermMonthsError(): Promise<string> {
-    if (!await this.termMonthsError.isVisible()) {
-      return '';
+    if (!(await this.termMonthsError.isVisible())) {
+      return "";
     }
-    return await this.termMonthsError.textContent() ?? '';
+    return (await this.termMonthsError.textContent()) ?? "";
   }
 
   /**
    * Get original term months error message
    */
   async getOriginalTermMonthsError(): Promise<string> {
-    if (!await this.originalTermMonthsError.isVisible()) {
-      return '';
+    if (!(await this.originalTermMonthsError.isVisible())) {
+      return "";
     }
-    return await this.originalTermMonthsError.textContent() ?? '';
+    return (await this.originalTermMonthsError.textContent()) ?? "";
   }
 
   /**
@@ -360,14 +395,14 @@ export class LoanEditorSidebar extends BasePage {
    */
   async hasValidationErrors(): Promise<boolean> {
     return (
-      await this.principalError.isVisible() ||
-      await this.remainingBalanceError.isVisible() ||
-      await this.annualRateError.isVisible() ||
-      await this.termMonthsError.isVisible() ||
-      await this.originalTermMonthsError.isVisible() ||
-      await this.startMonthError.isVisible() ||
-      await this.rateEffectiveError.isVisible() ||
-      await this.generalError.isVisible()
+      (await this.principalError.isVisible()) ||
+      (await this.remainingBalanceError.isVisible()) ||
+      (await this.annualRateError.isVisible()) ||
+      (await this.termMonthsError.isVisible()) ||
+      (await this.originalTermMonthsError.isVisible()) ||
+      (await this.startMonthError.isVisible()) ||
+      (await this.rateEffectiveError.isVisible()) ||
+      (await this.generalError.isVisible())
     );
   }
 
@@ -391,4 +426,3 @@ export class LoanEditorSidebar extends BasePage {
     await this.waitForHidden();
   }
 }
-

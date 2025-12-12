@@ -40,7 +40,6 @@ const closedLoan: Database["public"]["Tables"]["loans"]["Row"] = {
 };
 
 describe("dashboardCalculationsService", () => {
-
   describe("computeLoanMetrics", () => {
     it("computes metrics for an active loan and caps monthsRemaining", () => {
       const now = new Date();
@@ -70,9 +69,9 @@ describe("dashboardCalculationsService", () => {
     });
 
     it("returns the expected dashboard loan item shape", () => {
-      expectTypeOf(computeLoanMetrics).returns.toEqualTypeOf<
-        DashboardOverviewLoanItem
-      >();
+      expectTypeOf(
+        computeLoanMetrics,
+      ).returns.toEqualTypeOf<DashboardOverviewLoanItem>();
     });
   });
 

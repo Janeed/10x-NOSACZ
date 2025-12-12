@@ -117,7 +117,10 @@ export const LoansList: FC<LoansListProps> = ({
 }) => {
   return (
     <div className="overflow-x-auto">
-      <table data-test="loans-table" className="w-full min-w-[720px] table-fixed border-collapse text-sm text-slate-700">
+      <table
+        data-test="loans-table"
+        className="w-full min-w-[720px] table-fixed border-collapse text-sm text-slate-700"
+      >
         <thead>
           <tr className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             {headers.map((column) => {
@@ -182,17 +185,26 @@ const LoanRow: FC<LoanRowProps> = ({
   onQuickBalance,
 }) => {
   return (
-    <tr data-test="loan-row" data-loan-id={loan.id} className="border-t border-slate-100 last:border-b">
+    <tr
+      data-test="loan-row"
+      data-loan-id={loan.id}
+      className="border-t border-slate-100 last:border-b"
+    >
       <td className="px-4 py-3 align-middle text-slate-900">
         <div className="flex flex-col">
-          <span data-test="loan-label" className="font-medium">{formatLoanLabel(loan)}</span>
+          <span data-test="loan-label" className="font-medium">
+            {formatLoanLabel(loan)}
+          </span>
           <span className="text-xs text-slate-500">
             Created {formatMonth(loan.createdAt)}
           </span>
         </div>
       </td>
       <td className="px-4 py-3 align-middle">
-        <span data-test="loan-remaining-balance" className="font-semibold text-slate-900">
+        <span
+          data-test="loan-remaining-balance"
+          className="font-semibold text-slate-900"
+        >
           {formatCurrency(loan.remainingBalance)}
         </span>
         <span className="ml-1 text-xs text-slate-500">
@@ -232,10 +244,22 @@ const LoanRowActions: FC<LoanRowActionsProps> = ({
 }) => {
   return (
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="ghost" data-test="loan-edit-button" onClick={onEdit}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        data-test="loan-edit-button"
+        onClick={onEdit}
+      >
         Edit
       </Button>
-      <Button type="button" size="sm" variant="ghost" data-test="loan-quick-balance-button" onClick={onQuickBalance}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        data-test="loan-quick-balance-button"
+        onClick={onQuickBalance}
+      >
         Quick balance
       </Button>
       <Button
@@ -255,14 +279,22 @@ const LoanRowActions: FC<LoanRowActionsProps> = ({
 const StatusBadge: FC<StatusBadgeProps> = ({ isClosed }) => {
   if (isClosed) {
     return (
-      <span data-test="loan-status-badge" data-status="closed" className="inline-flex items-center rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
+      <span
+        data-test="loan-status-badge"
+        data-status="closed"
+        className="inline-flex items-center rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700"
+      >
         Closed
       </span>
     );
   }
 
   return (
-    <span data-test="loan-status-badge" data-status="active" className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+    <span
+      data-test="loan-status-badge"
+      data-status="active"
+      className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700"
+    >
       Active
     </span>
   );

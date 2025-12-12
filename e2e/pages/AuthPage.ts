@@ -1,7 +1,7 @@
-import { type Page, type Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { type Page, type Locator, expect } from "@playwright/test";
+import { BasePage } from "./BasePage";
 
-export type AuthMode = 'signin' | 'signup';
+export type AuthMode = "signin" | "signup";
 
 /**
  * Page Object Model for Authentication Page
@@ -22,22 +22,22 @@ export class AuthPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.form = this.getByTestId('auth-form');
-    this.title = this.getByTestId('auth-form-title');
-    this.emailInput = this.getByTestId('auth-email-input');
-    this.emailError = this.getByTestId('auth-email-error');
-    this.passwordInput = this.getByTestId('auth-password-input');
-    this.passwordError = this.getByTestId('auth-password-error');
-    this.passwordToggle = this.getByTestId('auth-password-toggle');
-    this.submitButton = this.getByTestId('auth-submit-button');
-    this.errorSummary = this.getByTestId('error-summary');
+    this.form = this.getByTestId("auth-form");
+    this.title = this.getByTestId("auth-form-title");
+    this.emailInput = this.getByTestId("auth-email-input");
+    this.emailError = this.getByTestId("auth-email-error");
+    this.passwordInput = this.getByTestId("auth-password-input");
+    this.passwordError = this.getByTestId("auth-password-error");
+    this.passwordToggle = this.getByTestId("auth-password-toggle");
+    this.submitButton = this.getByTestId("auth-submit-button");
+    this.errorSummary = this.getByTestId("error-summary");
   }
 
   /**
    * Navigate to sign-in page
    */
   async navigateToSignIn(): Promise<void> {
-    await this.goto('/auth/signin');
+    await this.goto("/auth/signin");
     await this.waitForLoad();
   }
 
@@ -45,7 +45,7 @@ export class AuthPage extends BasePage {
    * Navigate to sign-up page
    */
   async navigateToSignUp(): Promise<void> {
-    await this.goto('/auth/signup');
+    await this.goto("/auth/signup");
     await this.waitForLoad();
   }
 
@@ -53,23 +53,23 @@ export class AuthPage extends BasePage {
    * Get current form mode
    */
   async getMode(): Promise<AuthMode | null> {
-    return await this.form.getAttribute('data-mode') as AuthMode | null;
+    return (await this.form.getAttribute("data-mode")) as AuthMode | null;
   }
 
   /**
    * Verify form is in sign-in mode
    */
   async verifySignInMode(): Promise<void> {
-    await expect(this.form).toHaveAttribute('data-mode', 'signin');
-    await expect(this.title).toContainText('Sign in');
+    await expect(this.form).toHaveAttribute("data-mode", "signin");
+    await expect(this.title).toContainText("Sign in");
   }
 
   /**
    * Verify form is in sign-up mode
    */
   async verifySignUpMode(): Promise<void> {
-    await expect(this.form).toHaveAttribute('data-mode', 'signup');
-    await expect(this.title).toContainText('Create');
+    await expect(this.form).toHaveAttribute("data-mode", "signup");
+    await expect(this.title).toContainText("Create");
   }
 
   /**
@@ -97,8 +97,8 @@ export class AuthPage extends BasePage {
    * Check if password is visible (text type)
    */
   async isPasswordVisible(): Promise<boolean> {
-    const type = await this.passwordInput.getAttribute('type');
-    return type === 'text';
+    const type = await this.passwordInput.getAttribute("type");
+    return type === "text";
   }
 
   /**
@@ -119,20 +119,20 @@ export class AuthPage extends BasePage {
    * Get email error message
    */
   async getEmailError(): Promise<string> {
-    if (!await this.emailError.isVisible()) {
-      return '';
+    if (!(await this.emailError.isVisible())) {
+      return "";
     }
-    return await this.emailError.textContent() ?? '';
+    return (await this.emailError.textContent()) ?? "";
   }
 
   /**
    * Get password error message
    */
   async getPasswordError(): Promise<string> {
-    if (!await this.passwordError.isVisible()) {
-      return '';
+    if (!(await this.passwordError.isVisible())) {
+      return "";
     }
-    return await this.passwordError.textContent() ?? '';
+    return (await this.passwordError.textContent()) ?? "";
   }
 
   /**
@@ -146,16 +146,16 @@ export class AuthPage extends BasePage {
    * Get error summary text
    */
   async getErrorSummaryText(): Promise<string> {
-    if (!await this.errorSummary.isVisible()) {
-      return '';
+    if (!(await this.errorSummary.isVisible())) {
+      return "";
     }
-    return await this.errorSummary.textContent() ?? '';
+    return (await this.errorSummary.textContent()) ?? "";
   }
 
   /**
    * Wait for navigation after successful auth
    */
-  async waitForSuccessfulAuth(expectedUrl: string = '/dashboard'): Promise<void> {
+  async waitForSuccessfulAuth(expectedUrl = "/dashboard"): Promise<void> {
     await this.page.waitForURL(expectedUrl, { timeout: 10000 });
   }
 
@@ -207,8 +207,7 @@ export class AuthPage extends BasePage {
     const hasEmailError = await this.emailError.isVisible();
     const hasPasswordError = await this.passwordError.isVisible();
     const hasErrorSummary = await this.errorSummary.isVisible();
-    
+
     expect(hasEmailError || hasPasswordError || hasErrorSummary).toBe(true);
   }
 }
-

@@ -203,13 +203,22 @@ export const LoanBalanceQuickEdit = ({
         data-test="loan-quick-balance-dialog"
         className="relative w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
       >
-        <h2 data-test="loan-quick-balance-title" className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2
+          data-test="loan-quick-balance-title"
+          className="text-lg font-semibold text-slate-900"
+        >
+          {title}
+        </h2>
         <p className="mt-1 text-sm text-slate-600">
           Update the remaining balance after recording an extra payment. This
           change will mark simulations as stale.
         </p>
 
-        <form data-test="loan-quick-balance-form" className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <form
+          data-test="loan-quick-balance-form"
+          className="mt-4 space-y-4"
+          onSubmit={handleSubmit}
+        >
           <div>
             <label
               className="block text-sm font-medium text-slate-700"
@@ -232,12 +241,22 @@ export const LoanBalanceQuickEdit = ({
               Principal: {currencyFormatter.format(loan.principal)}
             </p>
             {fieldError ? (
-              <p data-test="loan-quick-balance-field-error" className="mt-1 text-xs text-red-600">{fieldError}</p>
+              <p
+                data-test="loan-quick-balance-field-error"
+                className="mt-1 text-xs text-red-600"
+              >
+                {fieldError}
+              </p>
             ) : null}
           </div>
 
           {nonFieldError ? (
-            <p data-test="loan-quick-balance-error" className="text-sm text-red-600">{nonFieldError}</p>
+            <p
+              data-test="loan-quick-balance-error"
+              className="text-sm text-red-600"
+            >
+              {nonFieldError}
+            </p>
           ) : null}
 
           <div className="flex justify-end gap-3">
@@ -250,7 +269,11 @@ export const LoanBalanceQuickEdit = ({
             >
               Cancel
             </Button>
-            <Button type="submit" data-test="loan-quick-balance-submit-button" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              data-test="loan-quick-balance-submit-button"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Saving…" : "Save"}
             </Button>
           </div>

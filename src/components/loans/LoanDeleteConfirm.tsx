@@ -101,11 +101,18 @@ export const LoanDeleteConfirm = ({
         </p>
         <p className="mt-3 text-sm text-slate-700">
           Identifier:{" "}
-          <span data-test="loan-delete-id" className="font-mono text-slate-900">{loan.id}</span>
+          <span data-test="loan-delete-id" className="font-mono text-slate-900">
+            {loan.id}
+          </span>
         </p>
 
         {errorMessage ? (
-          <p data-test="loan-delete-error" className="mt-3 text-sm text-red-600">{errorMessage}</p>
+          <p
+            data-test="loan-delete-error"
+            className="mt-3 text-sm text-red-600"
+          >
+            {errorMessage}
+          </p>
         ) : null}
 
         <div className="mt-6 flex justify-end gap-3">

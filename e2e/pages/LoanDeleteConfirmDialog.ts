@@ -1,5 +1,5 @@
-import { type Page, type Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { type Page, type Locator, expect } from "@playwright/test";
+import { BasePage } from "./BasePage";
 
 /**
  * Page Object Model for Loan Delete Confirmation Dialog
@@ -16,26 +16,26 @@ export class LoanDeleteConfirmDialog extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.dialog = this.getByTestId('loan-delete-dialog');
-    this.title = this.getByTestId('loan-delete-title');
-    this.loanId = this.getByTestId('loan-delete-id');
-    this.errorMessage = this.getByTestId('loan-delete-error');
-    this.cancelButton = this.getByTestId('loan-delete-cancel-button');
-    this.confirmButton = this.getByTestId('loan-delete-confirm-button');
+    this.dialog = this.getByTestId("loan-delete-dialog");
+    this.title = this.getByTestId("loan-delete-title");
+    this.loanId = this.getByTestId("loan-delete-id");
+    this.errorMessage = this.getByTestId("loan-delete-error");
+    this.cancelButton = this.getByTestId("loan-delete-cancel-button");
+    this.confirmButton = this.getByTestId("loan-delete-confirm-button");
   }
 
   /**
    * Wait for dialog to be visible
    */
   async waitForVisible(): Promise<void> {
-    await this.dialog.waitFor({ state: 'visible' });
+    await this.dialog.waitFor({ state: "visible" });
   }
 
   /**
    * Wait for dialog to be hidden
    */
   async waitForHidden(): Promise<void> {
-    await this.dialog.waitFor({ state: 'hidden' });
+    await this.dialog.waitFor({ state: "hidden" });
   }
 
   /**
@@ -49,24 +49,24 @@ export class LoanDeleteConfirmDialog extends BasePage {
    * Get dialog title text
    */
   async getTitle(): Promise<string> {
-    return await this.title.textContent() ?? '';
+    return (await this.title.textContent()) ?? "";
   }
 
   /**
    * Get displayed loan ID
    */
   async getLoanId(): Promise<string> {
-    return await this.loanId.textContent() ?? '';
+    return (await this.loanId.textContent()) ?? "";
   }
 
   /**
    * Get error message if visible
    */
   async getErrorMessage(): Promise<string> {
-    if (!await this.errorMessage.isVisible()) {
-      return '';
+    if (!(await this.errorMessage.isVisible())) {
+      return "";
     }
-    return await this.errorMessage.textContent() ?? '';
+    return (await this.errorMessage.textContent()) ?? "";
   }
 
   /**
@@ -104,7 +104,7 @@ export class LoanDeleteConfirmDialog extends BasePage {
    */
   async verifyDialog(expectedLoanId?: string): Promise<void> {
     await expect(this.dialog).toBeVisible();
-    await expect(this.title).toContainText('Delete loan');
+    await expect(this.title).toContainText("Delete loan");
     if (expectedLoanId) {
       await expect(this.loanId).toContainText(expectedLoanId);
     }
@@ -124,4 +124,3 @@ export class LoanDeleteConfirmDialog extends BasePage {
     await this.cancel();
   }
 }
-

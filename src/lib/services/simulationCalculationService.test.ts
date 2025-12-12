@@ -35,15 +35,13 @@ const createLoan = (startMonth?: string | null): LoanRow =>
     start_month:
       startMonth === undefined ? "2024-01-01" : (startMonth as string),
     term_months: 24,
-  } as LoanRow);
+  }) as LoanRow;
 
-const createSimulation = (
-  overrides?: Partial<SimulationRow>,
-): SimulationRow =>
+const createSimulation = (overrides?: Partial<SimulationRow>): SimulationRow =>
   ({
     ...BASE_SIMULATION,
     ...overrides,
-  } as SimulationRow);
+  }) as SimulationRow;
 
 const createContext = (
   loans: LoanRow[],
@@ -60,9 +58,9 @@ describe("computeSimulationMetrics", () => {
   });
 
   it("returns zeroed metrics when no loans are available", () => {
-    vi
-      .spyOn(sharedService, "computeProjectedPayoffMonth")
-      .mockReturnValue("2025-03-01");
+    vi.spyOn(sharedService, "computeProjectedPayoffMonth").mockReturnValue(
+      "2025-03-01",
+    );
 
     const context = createContext([], createSimulation());
     const result = computeSimulationMetrics(context);
@@ -83,12 +81,12 @@ describe("computeSimulationMetrics", () => {
   });
 
   it("aggregates baseline and strategy metrics for active loans", () => {
-    vi
-      .spyOn(sharedService, "computeProjectedPayoffMonth")
-      .mockReturnValue("2025-03-01");
-    vi
-      .spyOn(sharedService, "deriveStandardMonthlyPayment")
-      .mockReturnValue(100);
+    vi.spyOn(sharedService, "computeProjectedPayoffMonth").mockReturnValue(
+      "2025-03-01",
+    );
+    vi.spyOn(sharedService, "deriveStandardMonthlyPayment").mockReturnValue(
+      100,
+    );
     vi.spyOn(sharedService, "generateBaselineProjection").mockReturnValue([
       {
         month: "2025-01-01",
@@ -141,11 +139,14 @@ describe("buildLoanSnapshots", () => {
   });
 
   it("respects the minimum term boundary and falls back to start month when missing", () => {
-    vi
-      .spyOn(sharedService, "computeProjectedPayoffMonth")
-      .mockReturnValue("fallback-month");
+    vi.spyOn(sharedService, "computeProjectedPayoffMonth").mockReturnValue(
+      "fallback-month",
+    );
 
-    const simulation = createSimulation({ started_at: null, created_at: "2025-01-01T00:00:00.000Z" });
+    const simulation = createSimulation({
+      started_at: null,
+      created_at: "2025-01-01T00:00:00.000Z",
+    });
     const loanWithMissingStartMonth = createLoan(null as unknown as string);
     const context = createContext([loanWithMissingStartMonth], simulation);
 

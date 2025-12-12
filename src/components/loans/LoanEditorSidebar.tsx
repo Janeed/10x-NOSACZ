@@ -591,7 +591,12 @@ export const LoanEditorSidebar = ({
       >
         <header className="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <h2 data-test="loan-editor-title" className="text-lg font-semibold text-slate-900">{title}</h2>
+            <h2
+              data-test="loan-editor-title"
+              className="text-lg font-semibold text-slate-900"
+            >
+              {title}
+            </h2>
             <p className="text-sm text-slate-600">{description}</p>
           </div>
           <Button
@@ -632,7 +637,12 @@ export const LoanEditorSidebar = ({
                 required
               />
               {errors.principal ? (
-                <p data-test="loan-principal-error" className="mt-1 text-xs text-red-600">{errors.principal}</p>
+                <p
+                  data-test="loan-principal-error"
+                  className="mt-1 text-xs text-red-600"
+                >
+                  {errors.principal}
+                </p>
               ) : null}
             </div>
 
@@ -659,7 +669,10 @@ export const LoanEditorSidebar = ({
                 amount.
               </p>
               {errors.remainingBalance ? (
-                <p data-test="loan-remaining-balance-error" className="mt-1 text-xs text-red-600">
+                <p
+                  data-test="loan-remaining-balance-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.remainingBalance}
                 </p>
               ) : null}
@@ -688,7 +701,12 @@ export const LoanEditorSidebar = ({
                 Example: enter 7.25 for a 7.25% annual interest rate.
               </p>
               {errors.annualRate ? (
-                <p data-test="loan-annual-rate-error" className="mt-1 text-xs text-red-600">{errors.annualRate}</p>
+                <p
+                  data-test="loan-annual-rate-error"
+                  className="mt-1 text-xs text-red-600"
+                >
+                  {errors.annualRate}
+                </p>
               ) : null}
             </div>
 
@@ -713,7 +731,10 @@ export const LoanEditorSidebar = ({
                   required
                 />
                 {errors.termMonths ? (
-                  <p data-test="loan-term-months-error" className="mt-1 text-xs text-red-600">
+                  <p
+                    data-test="loan-term-months-error"
+                    className="mt-1 text-xs text-red-600"
+                  >
                     {errors.termMonths}
                   </p>
                 ) : null}
@@ -738,7 +759,10 @@ export const LoanEditorSidebar = ({
                   required
                 />
                 {errors.originalTermMonths ? (
-                  <p data-test="loan-original-term-months-error" className="mt-1 text-xs text-red-600">
+                  <p
+                    data-test="loan-original-term-months-error"
+                    className="mt-1 text-xs text-red-600"
+                  >
                     {errors.originalTermMonths}
                   </p>
                 ) : null}
@@ -792,7 +816,12 @@ export const LoanEditorSidebar = ({
                 </div>
               </div>
               {errors.startMonth ? (
-                <p data-test="loan-start-month-error" className="mt-1 text-xs text-red-600">{errors.startMonth}</p>
+                <p
+                  data-test="loan-start-month-error"
+                  className="mt-1 text-xs text-red-600"
+                >
+                  {errors.startMonth}
+                </p>
               ) : null}
             </div>
 
@@ -829,14 +858,19 @@ export const LoanEditorSidebar = ({
                 </label>
               </div>
               {errors.rateChangeEffective ? (
-                <p data-test="loan-rate-effective-error" className="mt-1 text-xs text-red-600">
+                <p
+                  data-test="loan-rate-effective-error"
+                  className="mt-1 text-xs text-red-600"
+                >
                   {errors.rateChangeEffective}
                 </p>
               ) : null}
             </fieldset>
 
             {nonFieldError ? (
-              <p data-test="loan-editor-error" className="text-sm text-red-600">{nonFieldError}</p>
+              <p data-test="loan-editor-error" className="text-sm text-red-600">
+                {nonFieldError}
+              </p>
             ) : null}
           </div>
 
@@ -850,7 +884,11 @@ export const LoanEditorSidebar = ({
             >
               Cancel
             </Button>
-            <Button type="submit" data-test="loan-editor-submit-button" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              data-test="loan-editor-submit-button"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Saving…" : "Save loan"}
             </Button>
           </div>

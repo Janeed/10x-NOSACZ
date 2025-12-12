@@ -1,5 +1,5 @@
-import { type Page, type Locator, expect } from '@playwright/test';
-import { BasePage } from './BasePage';
+import { type Page, type Locator, expect } from "@playwright/test";
+import { BasePage } from "./BasePage";
 
 /**
  * Page Object Model for Loan Balance Quick Edit Dialog
@@ -18,28 +18,28 @@ export class LoanBalanceQuickEditDialog extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.dialog = this.getByTestId('loan-quick-balance-dialog');
-    this.title = this.getByTestId('loan-quick-balance-title');
-    this.form = this.getByTestId('loan-quick-balance-form');
-    this.balanceInput = this.getByTestId('loan-quick-balance-input');
-    this.fieldError = this.getByTestId('loan-quick-balance-field-error');
-    this.generalError = this.getByTestId('loan-quick-balance-error');
-    this.cancelButton = this.getByTestId('loan-quick-balance-cancel-button');
-    this.submitButton = this.getByTestId('loan-quick-balance-submit-button');
+    this.dialog = this.getByTestId("loan-quick-balance-dialog");
+    this.title = this.getByTestId("loan-quick-balance-title");
+    this.form = this.getByTestId("loan-quick-balance-form");
+    this.balanceInput = this.getByTestId("loan-quick-balance-input");
+    this.fieldError = this.getByTestId("loan-quick-balance-field-error");
+    this.generalError = this.getByTestId("loan-quick-balance-error");
+    this.cancelButton = this.getByTestId("loan-quick-balance-cancel-button");
+    this.submitButton = this.getByTestId("loan-quick-balance-submit-button");
   }
 
   /**
    * Wait for dialog to be visible
    */
   async waitForVisible(): Promise<void> {
-    await this.dialog.waitFor({ state: 'visible' });
+    await this.dialog.waitFor({ state: "visible" });
   }
 
   /**
    * Wait for dialog to be hidden
    */
   async waitForHidden(): Promise<void> {
-    await this.dialog.waitFor({ state: 'hidden' });
+    await this.dialog.waitFor({ state: "hidden" });
   }
 
   /**
@@ -53,7 +53,7 @@ export class LoanBalanceQuickEditDialog extends BasePage {
    * Get dialog title text
    */
   async getTitle(): Promise<string> {
-    return await this.title.textContent() ?? '';
+    return (await this.title.textContent()) ?? "";
   }
 
   /**
@@ -68,13 +68,16 @@ export class LoanBalanceQuickEditDialog extends BasePage {
    */
   async setBalance(value: string): Promise<void> {
     // For negative values (validation tests), use JavaScript to bypass HTML5 min attribute
-    if (value.startsWith('-')) {
+    if (value.startsWith("-")) {
       await this.balanceInput.evaluate((el: HTMLInputElement, val: string) => {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        )?.set;
         nativeInputValueSetter?.call(el, val);
-        const inputEvent = new Event('input', { bubbles: true });
+        const inputEvent = new Event("input", { bubbles: true });
         el.dispatchEvent(inputEvent);
-        const changeEvent = new Event('change', { bubbles: true });
+        const changeEvent = new Event("change", { bubbles: true });
         el.dispatchEvent(changeEvent);
       }, value);
       await this.page.waitForTimeout(200);
@@ -87,27 +90,30 @@ export class LoanBalanceQuickEditDialog extends BasePage {
    * Get field error message
    */
   async getFieldError(): Promise<string> {
-    if (!await this.fieldError.isVisible()) {
-      return '';
+    if (!(await this.fieldError.isVisible())) {
+      return "";
     }
-    return await this.fieldError.textContent() ?? '';
+    return (await this.fieldError.textContent()) ?? "";
   }
 
   /**
    * Get general error message
    */
   async getGeneralError(): Promise<string> {
-    if (!await this.generalError.isVisible()) {
-      return '';
+    if (!(await this.generalError.isVisible())) {
+      return "";
     }
-    return await this.generalError.textContent() ?? '';
+    return (await this.generalError.textContent()) ?? "";
   }
 
   /**
    * Check if any error is visible
    */
   async hasError(): Promise<boolean> {
-    return await this.fieldError.isVisible() || await this.generalError.isVisible();
+    return (
+      (await this.fieldError.isVisible()) ||
+      (await this.generalError.isVisible())
+    );
   }
 
   /**
@@ -137,7 +143,7 @@ export class LoanBalanceQuickEditDialog extends BasePage {
    */
   async verifyDialog(): Promise<void> {
     await expect(this.dialog).toBeVisible();
-    await expect(this.title).toContainText('Adjust');
+    await expect(this.title).toContainText("Adjust");
   }
 
   /**
@@ -168,4 +174,3 @@ export class LoanBalanceQuickEditDialog extends BasePage {
     await this.cancel();
   }
 }
-

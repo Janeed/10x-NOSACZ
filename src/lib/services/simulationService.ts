@@ -656,12 +656,16 @@ export const activateSimulation = async (
       requestId: options?.requestId,
     });
   } catch (error) {
-    logger.warn("simulation_activate", "Failed to create monthly execution logs", {
-      simulationId: id,
-      userId,
-      error: error instanceof Error ? error.message : String(error),
-      ...(options?.requestId ? { requestId: options.requestId } : {}),
-    });
+    logger.warn(
+      "simulation_activate",
+      "Failed to create monthly execution logs",
+      {
+        simulationId: id,
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+        ...(options?.requestId ? { requestId: options.requestId } : {}),
+      },
+    );
     // Don't fail activation if log creation fails
   }
 

@@ -459,12 +459,13 @@ export const ensureMonthlyExecutionLogs = async (
 ): Promise<{ created: number; months: string[] }> => {
   const now = options?.now || new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthStr = currentMonthStart.toISOString().split("T")[0];
 
   // 1. Fetch active simulation
   const { data: activeSim, error: simError } = await supabase
     .from("simulations")
-    .select("id, created_at, started_at, strategy, reinvest_reduced_payments, monthly_overpayment_limit")
+    .select(
+      "id, created_at, started_at, strategy, reinvest_reduced_payments, monthly_overpayment_limit",
+    )
     .eq("user_id", userId)
     .eq("is_active", true)
     .single();
@@ -523,7 +524,9 @@ export const ensureMonthlyExecutionLogs = async (
   // 4. Fetch simulation loan snapshots - these are the initial states
   const { data: snapshots, error: snapshotsError } = await supabase
     .from("simulation_loan_snapshots")
-    .select("loan_id, starting_balance, starting_rate, remaining_term_months, starting_month")
+    .select(
+      "loan_id, starting_balance, starting_rate, remaining_term_months, starting_month",
+    )
     .eq("simulation_id", activeSim.id)
     .eq("user_id", userId);
 
@@ -566,8 +569,10 @@ export const ensureMonthlyExecutionLogs = async (
 
   // 6. Run projection from simulation start to current month
   // This gives us accurate overpayment allocations for each month
-  const { generateStrategyProjection } = await import("./simulationSharedService.ts");
-  
+  const { generateStrategyProjection } = await import(
+    "./simulationSharedService.ts"
+  );
+
   // Convert snapshots to projection loans
   const projectionLoans = snapshots.map((snapshot) => ({
     id: snapshot.loan_id,
@@ -581,9 +586,11 @@ export const ensureMonthlyExecutionLogs = async (
   // Run projection from simulation start
   const startYear = simStartMonth.getFullYear();
   const startMonth = simStartMonth.getMonth();
-  const monthsToProject = Math.ceil(
-    (currentMonthStart.getTime() - simStartMonth.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
-  ) + 1; // +1 to include current month
+  const monthsToProject =
+    Math.ceil(
+      (currentMonthStart.getTime() - simStartMonth.getTime()) /
+        (1000 * 60 * 60 * 24 * 30.44),
+    ) + 1; // +1 to include current month
 
   const projection = generateStrategyProjection(
     projectionLoans,
@@ -612,39 +619,47 @@ export const ensureMonthlyExecutionLogs = async (
 
   // 7. Build overpayment map from projection
   // Extract overpayment by calculating: total payment - standard payment
-  const { deriveStandardMonthlyPayment } = await import("./simulationSharedService.ts");
+  const { deriveStandardMonthlyPayment } = await import(
+    "./simulationSharedService.ts"
+  );
   const overpaymentByMonthAndLoan = new Map<string, number>();
 
   console.log("PROJECTION:", projection);
   console.log("PROJECTION1:", projection[0].loanData[0]);
   console.log("PROJECTION2:", projection[0].loanData[1]);
   projection.forEach((monthData, monthIndex) => {
-    monthData.loanData.forEach(loanData => {
+    monthData.loanData.forEach((loanData) => {
       // Calculate what the standard payment would be for this loan
-      const snapshot = snapshots.find(s => s.loan_id === loanData.loanId);
+      const snapshot = snapshots.find((s) => s.loan_id === loanData.loanId);
       if (!snapshot) return;
-      
+
       // Get the balance at the START of this month (before payment)
       // For the first month, use starting_balance
       // For subsequent months, use the remaining balance from the PREVIOUS month + this month's principal
-      let balanceAtMonthStart = loanData.remaining + loanData.principal;
-      
+      const balanceAtMonthStart = loanData.remaining + loanData.principal;
+
       // Calculate remaining term - starts at full term and decreases each month
-      const remainingTerm = Math.max(1, snapshot.remaining_term_months - monthIndex);
-      
+      const remainingTerm = Math.max(
+        1,
+        snapshot.remaining_term_months - monthIndex,
+      );
+
       // Calculate standard monthly payment for this balance and term
       const standardPayment = deriveStandardMonthlyPayment(
         balanceAtMonthStart,
         snapshot.starting_rate,
-        remainingTerm
+        remainingTerm,
       );
-      
+
       // The overpayment is the difference between total principal paid and what would be paid with just standard payment
       // Total payment = interest + principal, so principal = payment - interest
       // Overpayment = actual principal - (standard payment - interest)
-      const standardPrincipal = Math.max(0, standardPayment - loanData.interest);
+      const standardPrincipal = Math.max(
+        0,
+        standardPayment - loanData.interest,
+      );
       const overpayment = Math.max(0, loanData.principal - standardPrincipal);
-      
+
       const key = `${monthData.month}:${loanData.loanId}`;
       overpaymentByMonthAndLoan.set(key, overpayment);
     });
@@ -652,7 +667,7 @@ export const ensureMonthlyExecutionLogs = async (
 
   // 8. Generate list of months from simulation start to current month
   const monthsToEnsure: Date[] = [];
-  let iterMonth = new Date(simStartMonth);
+  const iterMonth = new Date(simStartMonth);
   while (iterMonth <= currentMonthStart) {
     monthsToEnsure.push(new Date(iterMonth));
     iterMonth.setMonth(iterMonth.getMonth() + 1);
@@ -676,17 +691,13 @@ export const ensureMonthlyExecutionLogs = async (
         .maybeSingle();
 
       if (checkError) {
-        logger.warn(
-          "ensure_monthly_logs",
-          "Error checking existing log",
-          {
-            userId,
-            loanId: loan.id,
-            monthStart: monthStr,
-            error: checkError.message,
-            ...(options?.requestId ? { requestId: options.requestId } : {}),
-          },
-        );
+        logger.warn("ensure_monthly_logs", "Error checking existing log", {
+          userId,
+          loanId: loan.id,
+          monthStart: monthStr,
+          error: checkError.message,
+          ...(options?.requestId ? { requestId: options.requestId } : {}),
+        });
         continue;
       }
 
@@ -697,13 +708,15 @@ export const ensureMonthlyExecutionLogs = async (
 
       // Get strategy-allocated overpayment for this loan and month from projection
       const overpaymentKey = `${monthStr}:${loan.id}`;
-      const loanOverpayment = overpaymentByMonthAndLoan.get(overpaymentKey) || 0;
+      const loanOverpayment =
+        overpaymentByMonthAndLoan.get(overpaymentKey) || 0;
 
       // Calculate interest and principal portions for standard payment
       // Calculate month index using proper date arithmetic (year * 12 + month)
-      const monthIndex = (month.getFullYear() - simStartMonth.getFullYear()) * 12 +
-                        (month.getMonth() - simStartMonth.getMonth());
-      
+      const monthIndex =
+        (month.getFullYear() - simStartMonth.getFullYear()) * 12 +
+        (month.getMonth() - simStartMonth.getMonth());
+
       let interestPortion = 0;
       let principalPortion = 0;
       let remainingBalanceAfter = loan.remaining_balance;
@@ -711,8 +724,10 @@ export const ensureMonthlyExecutionLogs = async (
       // Find this loan's data in the projection for this month
       if (monthIndex >= 0 && monthIndex < projection.length) {
         const monthProjection = projection[monthIndex];
-        const loanProjection = monthProjection.loanData.find(ld => ld.loanId === loan.id);
-        
+        const loanProjection = monthProjection.loanData.find(
+          (ld) => ld.loanId === loan.id,
+        );
+
         if (loanProjection) {
           interestPortion = loanProjection.interest;
           principalPortion = loanProjection.principal;
@@ -773,21 +788,21 @@ export const ensureMonthlyExecutionLogs = async (
           ...(options?.requestId ? { requestId: options.requestId } : {}),
         },
       );
-      throw internalError("DB_ERROR", "Failed to create monthly execution logs", {
-        cause: insertError,
-      });
+      throw internalError(
+        "DB_ERROR",
+        "Failed to create monthly execution logs",
+        {
+          cause: insertError,
+        },
+      );
     }
 
-    logger.info(
-      "ensure_monthly_logs",
-      "Created monthly execution logs",
-      {
-        userId,
-        created: logsToInsert.length,
-        months: monthsToEnsure.map((m) => m.toISOString().split("T")[0]),
-        ...(options?.requestId ? { requestId: options.requestId } : {}),
-      },
-    );
+    logger.info("ensure_monthly_logs", "Created monthly execution logs", {
+      userId,
+      created: logsToInsert.length,
+      months: monthsToEnsure.map((m) => m.toISOString().split("T")[0]),
+      ...(options?.requestId ? { requestId: options.requestId } : {}),
+    });
   }
 
   return {
@@ -795,4 +810,3 @@ export const ensureMonthlyExecutionLogs = async (
     months: monthsToEnsure.map((m) => m.toISOString().split("T")[0]),
   };
 };
-

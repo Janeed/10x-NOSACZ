@@ -9,3 +9,4 @@ supabase
 .astro
 .vscode
 */**/*.astro
+e2e/

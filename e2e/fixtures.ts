@@ -1,18 +1,18 @@
-import { test as base } from '@playwright/test';
-import { LoansPage } from './pages/LoansPage';
-import { AuthPage } from './pages/AuthPage';
+import { test as base } from "@playwright/test";
+import { LoansPage } from "./pages/LoansPage";
+import { AuthPage } from "./pages/AuthPage";
 
 /**
  * Extended test fixtures with page objects pre-initialized
  * This allows tests to use page objects without manual initialization
- * 
+ *
  * Authentication is handled via global setup (auth.setup.ts)
  * which stores the authenticated state in .auth/user.json
  */
-type TestFixtures = {
+interface TestFixtures {
   loansPage: LoansPage;
   authPage: AuthPage;
-};
+}
 
 /**
  * Extended test with custom fixtures
@@ -22,7 +22,7 @@ type TestFixtures = {
  *   await loansPage.navigate();
  *   // ... rest of test
  * });
- * 
+ *
  * For auth tests:
  * test('auth test', async ({ authPage }) => {
  *   await authPage.navigateToSignIn();
@@ -40,5 +40,4 @@ export const test = base.extend<TestFixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
-
+export { expect } from "@playwright/test";

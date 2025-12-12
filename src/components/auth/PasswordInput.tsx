@@ -88,7 +88,11 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           </button>
         </div>
         {error ? (
-          <p id={errorId} data-test={`auth-${id}-error`} className="text-xs text-destructive">
+          <p
+            id={errorId}
+            data-test={`auth-${id}-error`}
+            className="text-xs text-destructive"
+          >
             {error}
           </p>
         ) : null}
