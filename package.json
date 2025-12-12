@@ -12,12 +12,16 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "database:dev:start": "supabase start",
+    "database:dev:stop": "supabase stop",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed --project=chromium-desktop",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:setup": "playwright test e2e/auth.setup.ts",
+    "test:e2e:loans": "playwright test e2e/loans.spec.ts",
+    "test:e2e:auth": "playwright test e2e/auth.spec.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.4.3",

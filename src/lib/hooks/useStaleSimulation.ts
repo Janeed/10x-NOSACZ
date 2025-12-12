@@ -43,7 +43,8 @@ export function useStaleSimulation(): UseStaleSimulationResult {
   const markStale = useCallback((trigger?: StaleTrigger) => {
     setState((current) => {
       if (current.isStale) {
-        if (!current.trigger && trigger) {
+        // Update trigger if a new one is provided, otherwise keep current
+        if (trigger) {
           return { isStale: true, trigger } satisfies StaleState;
         }
         return current;

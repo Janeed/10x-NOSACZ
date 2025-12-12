@@ -135,7 +135,20 @@ export class LoanEditorSidebar extends BasePage {
    * Fill principal amount
    */
   async setPrincipal(value: string): Promise<void> {
-    await this.principalInput.fill(value);
+    // For negative values (validation tests), use JavaScript to bypass HTML5 min attribute
+    if (value.startsWith('-')) {
+      await this.principalInput.evaluate((el: HTMLInputElement, val: string) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(el, val);
+        const inputEvent = new Event('input', { bubbles: true });
+        el.dispatchEvent(inputEvent);
+        const changeEvent = new Event('change', { bubbles: true });
+        el.dispatchEvent(changeEvent);
+      }, value);
+      await this.page.waitForTimeout(200);
+    } else {
+      await this.principalInput.fill(value);
+    }
   }
 
   /**
@@ -156,14 +169,40 @@ export class LoanEditorSidebar extends BasePage {
    * Fill term months
    */
   async setTermMonths(value: string): Promise<void> {
-    await this.termMonthsInput.fill(value);
+    // For zero or negative values (validation tests), use JavaScript to bypass HTML5 min attribute
+    if (value === '0' || value.startsWith('-')) {
+      await this.termMonthsInput.evaluate((el: HTMLInputElement, val: string) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(el, val);
+        const inputEvent = new Event('input', { bubbles: true });
+        el.dispatchEvent(inputEvent);
+        const changeEvent = new Event('change', { bubbles: true });
+        el.dispatchEvent(changeEvent);
+      }, value);
+      await this.page.waitForTimeout(200);
+    } else {
+      await this.termMonthsInput.fill(value);
+    }
   }
 
   /**
    * Fill original term months
    */
   async setOriginalTermMonths(value: string): Promise<void> {
-    await this.originalTermMonthsInput.fill(value);
+    // For zero or negative values (validation tests), use JavaScript to bypass HTML5 min attribute
+    if (value === '0' || value.startsWith('-')) {
+      await this.originalTermMonthsInput.evaluate((el: HTMLInputElement, val: string) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(el, val);
+        const inputEvent = new Event('input', { bubbles: true });
+        el.dispatchEvent(inputEvent);
+        const changeEvent = new Event('change', { bubbles: true });
+        el.dispatchEvent(changeEvent);
+      }, value);
+      await this.page.waitForTimeout(200);
+    } else {
+      await this.originalTermMonthsInput.fill(value);
+    }
   }
 
   /**

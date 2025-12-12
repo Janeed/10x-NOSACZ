@@ -67,7 +67,20 @@ export class LoanBalanceQuickEditDialog extends BasePage {
    * Set new balance value
    */
   async setBalance(value: string): Promise<void> {
-    await this.balanceInput.fill(value);
+    // For negative values (validation tests), use JavaScript to bypass HTML5 min attribute
+    if (value.startsWith('-')) {
+      await this.balanceInput.evaluate((el: HTMLInputElement, val: string) => {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        nativeInputValueSetter?.call(el, val);
+        const inputEvent = new Event('input', { bubbles: true });
+        el.dispatchEvent(inputEvent);
+        const changeEvent = new Event('change', { bubbles: true });
+        el.dispatchEvent(changeEvent);
+      }, value);
+      await this.page.waitForTimeout(200);
+    } else {
+      await this.balanceInput.fill(value);
+    }
   }
 
   /**

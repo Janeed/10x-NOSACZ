@@ -2,6 +2,42 @@
 
 ## Quick Start (5 minutes)
 
+## Prerequisites
+
+**IMPORTANT**: Before running tests, you need:
+
+1. ✅ **Docker** - Running (required by Supabase)
+2. ✅ **Supabase** - Local instance running
+3. ✅ **Dev Server** - Astro server running
+4. ✅ **Test User** - Account created
+5. ✅ **Credentials** - `.env.test` file configured
+
+### Step 0: Start Required Services
+
+**Terminal 1 - Start Supabase:**
+```bash
+npm run database:dev:start
+```
+
+Wait for:
+```
+✓ Started supabase local development setup.
+         API URL: http://localhost:54321
+```
+
+**Terminal 2 - Start Dev Server:**
+```bash
+npm run dev
+```
+
+Wait for:
+```
+✓ astro-dev-server
+  Local:    http://localhost:3000/
+```
+
+Keep both terminals running!
+
 ### Step 1: Create Test User
 
 **Option A - Via UI** (Recommended)
@@ -35,14 +71,30 @@ Replace with the credentials from Step 1.
 - ✅ File must be named `.env.test` (not `.env.test.txt`)
 - ✅ File must be in project root, not in `e2e/` folder
 
-### Step 3: Verify Setup
+### Step 3: Install Playwright
 
 ```bash
 # Install Playwright browsers (if not already done)
 npx playwright install chromium
+```
 
-# Run tests
-npx playwright test
+### Step 4: Verify Setup
+
+**Make sure all services are running:**
+
+```bash
+# Check Supabase (should return JSON)
+curl http://localhost:54321
+
+# Check dev server (should return HTML)
+curl http://localhost:3000
+```
+
+### Step 5: Run Tests
+
+**Terminal 3 - Run Tests:**
+```bash
+npm run test:e2e
 ```
 
 You should see:
@@ -56,6 +108,43 @@ Running 20 tests using 1 worker
 ```
 
 ## Troubleshooting
+
+### Error: "connect ECONNREFUSED 127.0.0.1:54321"
+
+**Cause**: Supabase is not running
+
+**Solution**:
+```bash
+# Terminal 1: Start Supabase
+npm run database:dev:start
+
+# Wait for "Started supabase local development setup"
+# Then re-run tests in Terminal 3
+```
+
+### Error: "TimeoutError: page.waitForURL: Timeout exceeded"
+
+**Cause**: Authentication failed, page didn't redirect
+
+**Common Causes**:
+1. Supabase not running
+2. Dev server not running
+3. Invalid credentials
+4. Test user doesn't exist
+
+**Solution**:
+```bash
+# Check all services are running
+curl http://localhost:54321  # Supabase (should work)
+curl http://localhost:3000   # Dev server (should work)
+
+# Verify credentials
+cat .env.test
+
+# Try manual login
+# Navigate to http://localhost:3000/auth/signin
+# Use credentials from .env.test
+```
 
 ### Error: "E2E_USERNAME and E2E_PASSWORD must be defined"
 

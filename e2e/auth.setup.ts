@@ -2,11 +2,16 @@ import { test as setup, expect } from '@playwright/test';
 import { AuthPage } from './pages/AuthPage';
 import * as path from 'path';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 
 /**
  * Global authentication setup for E2E tests
  * Authenticates once and stores session state to avoid repeated logins
  */
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const authFile = path.join(__dirname, '../.auth/user.json');
 
@@ -39,16 +44,48 @@ if (!E2E_USERNAME || !E2E_PASSWORD) {
 setup('authenticate', async ({ page }) => {
   const authPage = new AuthPage(page);
 
+  console.log('Starting authentication setup...');
+  console.log(`Using credentials: ${E2E_USERNAME}`);
+
   // Navigate to sign-in page
   await authPage.navigateToSignIn();
   await authPage.verifySignInMode();
 
+  console.log('Sign-in page loaded, submitting credentials...');
+
   // Perform sign-in
   await authPage.signIn(E2E_USERNAME, E2E_PASSWORD);
+
+  console.log('Form submitted, waiting for redirect...');
+
+  // Wait a bit for form submission
+  await page.waitForTimeout(2000);
+
+  // Check for errors before waiting for redirect
+  const hasError = await authPage.hasErrorSummary();
+  if (hasError) {
+    const errorText = await authPage.getErrorSummaryText();
+    console.error('Authentication failed with error:', errorText);
+    
+    // Check if it's a Supabase connection error
+    if (errorText.includes('wrong') || errorText.includes('Network error')) {
+      throw new Error(
+        '❌ Authentication failed.\n' +
+        'Common causes:\n' +
+        '1. Supabase is not running - Run: npm run database:dev:start\n' +
+        '2. Invalid credentials in .env.test\n' +
+        '3. Test user does not exist - Create via /auth/signup\n' +
+        `Error: ${errorText}`
+      );
+    }
+    throw new Error(`Authentication failed: ${errorText}`);
+  }
 
   // Wait for successful redirect to dashboard
   await authPage.waitForSuccessfulAuth('/dashboard');
   await authPage.verifyAuthenticated();
+
+  console.log('Successfully redirected to dashboard');
 
   // Verify we have a session by checking cookies or local storage
   const cookies = await page.context().cookies();

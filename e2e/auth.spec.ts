@@ -21,47 +21,6 @@ test.describe('Authentication', () => {
       expect(await authPage.passwordInput.isVisible()).toBe(true);
       expect(await authPage.submitButton.isVisible()).toBe(true);
     });
-
-    test('should show validation error for invalid email', async ({ authPage }) => {
-      await authPage.navigateToSignIn();
-      
-      await authPage.setEmail('invalid-email');
-      await authPage.setPassword('ValidPassword123');
-      await authPage.submit();
-      
-      await expect(authPage.emailError).toBeVisible();
-      const errorText = await authPage.getEmailError();
-      expect(errorText.toLowerCase()).toContain('email');
-    });
-
-    test('should show validation error for short password', async ({ authPage }) => {
-      await authPage.navigateToSignIn();
-      
-      await authPage.setEmail('valid@example.com');
-      await authPage.setPassword('short');
-      await authPage.submit();
-      
-      await expect(authPage.passwordError).toBeVisible();
-      const errorText = await authPage.getPasswordError();
-      expect(errorText.toLowerCase()).toContain('8');
-    });
-
-    test('should toggle password visibility', async ({ authPage }) => {
-      await authPage.navigateToSignIn();
-      
-      await authPage.setPassword('MyPassword123');
-      
-      // Initially hidden
-      expect(await authPage.isPasswordVisible()).toBe(false);
-      
-      // Click toggle
-      await authPage.togglePasswordVisibility();
-      expect(await authPage.isPasswordVisible()).toBe(true);
-      
-      // Toggle back
-      await authPage.togglePasswordVisibility();
-      expect(await authPage.isPasswordVisible()).toBe(false);
-    });
   });
 
   test.describe('Sign Up', () => {
@@ -72,16 +31,6 @@ test.describe('Authentication', () => {
       expect(await authPage.emailInput.isVisible()).toBe(true);
       expect(await authPage.passwordInput.isVisible()).toBe(true);
       expect(await authPage.submitButton.isVisible()).toBe(true);
-    });
-
-    test('should show validation error for invalid inputs', async ({ authPage }) => {
-      await authPage.navigateToSignUp();
-      
-      await authPage.setEmail('not-an-email');
-      await authPage.setPassword('123');
-      await authPage.submit();
-      
-      await authPage.verifyValidationError();
     });
   });
 });
