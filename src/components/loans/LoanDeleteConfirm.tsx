@@ -85,10 +85,12 @@ export const LoanDeleteConfirm = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="loan-delete-title"
+        data-test="loan-delete-dialog"
         className="relative w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
       >
         <h2
           id="loan-delete-title"
+          data-test="loan-delete-title"
           className="text-lg font-semibold text-slate-900"
         >
           {title}
@@ -99,17 +101,18 @@ export const LoanDeleteConfirm = ({
         </p>
         <p className="mt-3 text-sm text-slate-700">
           Identifier:{" "}
-          <span className="font-mono text-slate-900">{loan.id}</span>
+          <span data-test="loan-delete-id" className="font-mono text-slate-900">{loan.id}</span>
         </p>
 
         {errorMessage ? (
-          <p className="mt-3 text-sm text-red-600">{errorMessage}</p>
+          <p data-test="loan-delete-error" className="mt-3 text-sm text-red-600">{errorMessage}</p>
         ) : null}
 
         <div className="mt-6 flex justify-end gap-3">
           <Button
             type="button"
             variant="ghost"
+            data-test="loan-delete-cancel-button"
             onClick={onCancel}
             disabled={isDeleting}
           >
@@ -118,6 +121,7 @@ export const LoanDeleteConfirm = ({
           <Button
             type="button"
             variant="destructive"
+            data-test="loan-delete-confirm-button"
             onClick={handleConfirm}
             disabled={isDeleting}
           >

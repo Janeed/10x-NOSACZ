@@ -585,17 +585,20 @@ export const LoanEditorSidebar = ({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        data-test="loan-editor-sidebar"
+        data-mode={mode}
         className="relative ml-auto flex h-full w-full max-w-lg flex-col bg-white shadow-2xl"
       >
         <header className="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            <h2 data-test="loan-editor-title" className="text-lg font-semibold text-slate-900">{title}</h2>
             <p className="text-sm text-slate-600">{description}</p>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="icon"
+            data-test="loan-editor-close-button"
             onClick={onClose}
             disabled={isSubmitting}
             aria-label="Close loan editor"
@@ -604,6 +607,7 @@ export const LoanEditorSidebar = ({
           </Button>
         </header>
         <form
+          data-test="loan-editor-form"
           className="flex flex-1 flex-col overflow-y-auto px-6 py-4"
           onSubmit={handleSubmit}
         >
@@ -617,6 +621,7 @@ export const LoanEditorSidebar = ({
               </label>
               <input
                 id="loan-principal"
+                data-test="loan-principal-input"
                 type="number"
                 inputMode="decimal"
                 min="0"
@@ -627,7 +632,7 @@ export const LoanEditorSidebar = ({
                 required
               />
               {errors.principal ? (
-                <p className="mt-1 text-xs text-red-600">{errors.principal}</p>
+                <p data-test="loan-principal-error" className="mt-1 text-xs text-red-600">{errors.principal}</p>
               ) : null}
             </div>
 
@@ -640,6 +645,7 @@ export const LoanEditorSidebar = ({
               </label>
               <input
                 id="loan-remaining-balance"
+                data-test="loan-remaining-balance-input"
                 type="number"
                 inputMode="decimal"
                 min="0"
@@ -653,7 +659,7 @@ export const LoanEditorSidebar = ({
                 amount.
               </p>
               {errors.remainingBalance ? (
-                <p className="mt-1 text-xs text-red-600">
+                <p data-test="loan-remaining-balance-error" className="mt-1 text-xs text-red-600">
                   {errors.remainingBalance}
                 </p>
               ) : null}
@@ -668,6 +674,7 @@ export const LoanEditorSidebar = ({
               </label>
               <input
                 id="loan-annual-rate"
+                data-test="loan-annual-rate-input"
                 type="number"
                 inputMode="decimal"
                 min="0"
@@ -681,7 +688,7 @@ export const LoanEditorSidebar = ({
                 Example: enter 7.25 for a 7.25% annual interest rate.
               </p>
               {errors.annualRate ? (
-                <p className="mt-1 text-xs text-red-600">{errors.annualRate}</p>
+                <p data-test="loan-annual-rate-error" className="mt-1 text-xs text-red-600">{errors.annualRate}</p>
               ) : null}
             </div>
 
@@ -695,6 +702,7 @@ export const LoanEditorSidebar = ({
                 </label>
                 <input
                   id="loan-term-months"
+                  data-test="loan-term-months-input"
                   type="number"
                   inputMode="numeric"
                   min="1"
@@ -705,7 +713,7 @@ export const LoanEditorSidebar = ({
                   required
                 />
                 {errors.termMonths ? (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p data-test="loan-term-months-error" className="mt-1 text-xs text-red-600">
                     {errors.termMonths}
                   </p>
                 ) : null}
@@ -719,6 +727,7 @@ export const LoanEditorSidebar = ({
                 </label>
                 <input
                   id="loan-original-term-months"
+                  data-test="loan-original-term-months-input"
                   type="number"
                   inputMode="numeric"
                   min="1"
@@ -729,7 +738,7 @@ export const LoanEditorSidebar = ({
                   required
                 />
                 {errors.originalTermMonths ? (
-                  <p className="mt-1 text-xs text-red-600">
+                  <p data-test="loan-original-term-months-error" className="mt-1 text-xs text-red-600">
                     {errors.originalTermMonths}
                   </p>
                 ) : null}
@@ -750,6 +759,7 @@ export const LoanEditorSidebar = ({
                   </label>
                   <select
                     id="loan-start-month-month"
+                    data-test="loan-start-month-month-select"
                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                     value={startMonthParts.month}
                     onChange={handleStartMonthMonthChange}
@@ -768,6 +778,7 @@ export const LoanEditorSidebar = ({
                   </label>
                   <select
                     id="loan-start-month-year"
+                    data-test="loan-start-month-year-select"
                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                     value={startMonthParts.year}
                     onChange={handleStartMonthYearChange}
@@ -781,7 +792,7 @@ export const LoanEditorSidebar = ({
                 </div>
               </div>
               {errors.startMonth ? (
-                <p className="mt-1 text-xs text-red-600">{errors.startMonth}</p>
+                <p data-test="loan-start-month-error" className="mt-1 text-xs text-red-600">{errors.startMonth}</p>
               ) : null}
             </div>
 
@@ -798,6 +809,7 @@ export const LoanEditorSidebar = ({
                   <input
                     type="radio"
                     name="rate-effective"
+                    data-test="loan-rate-effective-current"
                     value="current"
                     checked={values.rateChangeEffective === "current"}
                     onChange={handleRateEffectiveChange}
@@ -808,6 +820,7 @@ export const LoanEditorSidebar = ({
                   <input
                     type="radio"
                     name="rate-effective"
+                    data-test="loan-rate-effective-next"
                     value="next"
                     checked={values.rateChangeEffective === "next"}
                     onChange={handleRateEffectiveChange}
@@ -816,14 +829,14 @@ export const LoanEditorSidebar = ({
                 </label>
               </div>
               {errors.rateChangeEffective ? (
-                <p className="mt-1 text-xs text-red-600">
+                <p data-test="loan-rate-effective-error" className="mt-1 text-xs text-red-600">
                   {errors.rateChangeEffective}
                 </p>
               ) : null}
             </fieldset>
 
             {nonFieldError ? (
-              <p className="text-sm text-red-600">{nonFieldError}</p>
+              <p data-test="loan-editor-error" className="text-sm text-red-600">{nonFieldError}</p>
             ) : null}
           </div>
 
@@ -831,12 +844,13 @@ export const LoanEditorSidebar = ({
             <Button
               type="button"
               variant="ghost"
+              data-test="loan-editor-cancel-button"
               onClick={onClose}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" data-test="loan-editor-submit-button" disabled={isSubmitting}>
               {isSubmitting ? "Saving…" : "Save loan"}
             </Button>
           </div>

@@ -50,6 +50,7 @@ export const LoansHeader: FC<LoansHeaderProps> = ({
           </label>
           <select
             id="loan-sort-field"
+            data-test="loans-sort-field-select"
             className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
             value={sorting.field}
             onChange={(event) =>
@@ -66,6 +67,7 @@ export const LoansHeader: FC<LoansHeaderProps> = ({
             type="button"
             size="sm"
             variant="outline"
+            data-test="loans-sort-order-toggle"
             onClick={onToggleSortOrder}
           >
             Order: {sorting.order === "asc" ? "Ascending" : "Descending"}
@@ -73,6 +75,7 @@ export const LoansHeader: FC<LoansHeaderProps> = ({
         </div>
         <Button
           type="button"
+          data-test="loans-add-button"
           onClick={onAdd}
           disabled={isAddDisabled}
           size="lg"

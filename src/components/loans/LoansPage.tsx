@@ -250,14 +250,14 @@ export const LoansPage: FC = () => {
     <AppShell activeNav="loans" title="Loans">
       <section className="mx-auto w-full max-w-6xl space-y-6 py-6">
         {staleState.isStale ? (
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <div data-test="loans-stale-banner" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="font-medium">
                   Simulation results may be outdated.
                 </p>
                 {triggerLabel ? (
-                  <p className="text-xs text-amber-800">
+                  <p data-test="loans-stale-trigger" className="text-xs text-amber-800">
                     Triggered by {triggerLabel}. Re-run your simulation to
                     refresh insights.
                   </p>
@@ -267,6 +267,7 @@ export const LoansPage: FC = () => {
                 type="button"
                 size="sm"
                 variant="link"
+                data-test="loans-stale-dismiss-button"
                 className="px-0"
                 onClick={dismiss}
               >
@@ -286,14 +287,14 @@ export const LoansPage: FC = () => {
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           {isLoading ? (
-            <p className="text-sm text-slate-600">Loading loans…</p>
+            <p data-test="loans-loading" className="text-sm text-slate-600">Loading loans…</p>
           ) : error ? (
-            <div className="space-y-3">
+            <div data-test="loans-error" className="space-y-3">
               <p className="text-sm font-semibold text-red-600">
                 Unable to load loans.
               </p>
-              <p className="text-sm text-red-500">{error.message}</p>
-              <Button type="button" variant="outline" onClick={handleRetry}>
+              <p data-test="loans-error-message" className="text-sm text-red-500">{error.message}</p>
+              <Button type="button" variant="outline" data-test="loans-retry-button" onClick={handleRetry}>
                 Retry
               </Button>
             </div>
@@ -301,7 +302,7 @@ export const LoansPage: FC = () => {
             <LoansEmptyState onAdd={handleAddLoan} isAddDisabled={isLoading} />
           ) : (
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+              <div data-test="loans-pagination-info" className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
                 <p>
                   Showing{" "}
                   <span className="font-semibold text-slate-900">
